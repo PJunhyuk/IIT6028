@@ -5,35 +5,79 @@ video_name = 'data/baby2.mp4';
 %% INITIALS AND COLOR TRANSFORMATION
 
 % video to frame_list(double-precision, [0, 1], YIQ)
-frame_list = video_to_frame_list(video_name);
+[Fs, frame_list] = video_to_frame_list(video_name);
 
-fprintf('video_to_frame_list end');
+fprintf('INITIALS AND COLOR TRANSFORMATION end\n');
 
 toc
 
 %% LAPLACIAN PYRAMID
 
-image_gaussian_1, image_residual_1] = get_gaussian_pyramid(2, frame_list, 1, 1);
-image_gaussian_2 = get_gaussian_pyramid(2, frame_list, 1, 2);
-image_gaussian_3 = get_gaussian_pyramid(2, frame_list, 1, 3);
-image_gaussian_4 = get_gaussian_pyramid(2, frame_list, 1, 4);
-image_gaussian_5 = get_gaussian_pyramid(2, frame_list, 1, 5);
-image_gaussian_6 = get_gaussian_pyramid(2, frame_list, 1, 6);
-image_gaussian_7 = get_gaussian_pyramid(2, frame_list, 1, 7);
-image_gaussian_8 = get_gaussian_pyramid(2, frame_list, 1, 8);
+[image_gaussian_1, image_residual_0] = get_laplacian_pyramid(2, frame_list, 1, 1);
+[image_gaussian_2, image_residual_1] = get_laplacian_pyramid(2, frame_list, 1, 2);
+[image_gaussian_3, image_residual_2] = get_laplacian_pyramid(2, frame_list, 1, 3);
+[image_gaussian_4, image_residual_3] = get_laplacian_pyramid(2, frame_list, 1, 4);
+[image_gaussian_5, image_residual_4] = get_laplacian_pyramid(2, frame_list, 1, 5);
+[image_gaussian_6, image_residual_5] = get_laplacian_pyramid(2, frame_list, 1, 6);
+[image_gaussian_7, image_residual_6] = get_laplacian_pyramid(2, frame_list, 1, 7);
 
-fprintf('get_gaussian_pyramid end');
+residual_seq_0 = get_residual_seq(2, frame_list, 1);
+%%% residual_seq_0: (frame_length, height, width, ch)
+residual_seq_1 = get_residual_seq(2, frame_list, 2);
+
+fprintf('LAPLACIAN PYRAMID end\n');
+
+toc
+
+%% TEMPORAL FILTERING
+
+% for i = 1: size(residual_seq, 2)
+%     for j = 1: size(residual_seq, 3)
+%         for ch = 1: size(residual_seq, 4)
+%             residual_pixel_wise = residual_seq(:, i, j, ch);
+%             fftx = fft(residual_pixel_wise);
+%         end
+%     end
+% end
+
+i = 1;
+j = 1;
+ch = 1;
+
+T = 1/Fs;
+L = size(residual_seq_1, 1);
+t = (0:L-1) * T;
+
+residual_pixel_wise = residual_seq_1(:, i, j, ch);
+fftx = fft(residual_pixel_wise);
+
+P2 = abs(fftx/L);
+P1 = P2(1:L/2+1);
+P1(2:end-1) = 2*P1(2:end-1);
+
+f = Fs * (0:(L/2))/L;
+% plot(f, P1)
+
+Hd = butterworthBandpassFilter(30, 256, 0.83, 1);
+
+P1_filtered = filter(Hd, P1);
+
+ifft = ifft(P1_filtered);
+
+fprintf('TEMPORAL FILTERING end\n');
 
 toc
 
 %% FUNCTIONS - video_to_frame_list
 
-function frame_list = video_to_frame_list(video_name)
+function [Fs, frame_list] = video_to_frame_list(video_name)
 
     % Load the video file into Matlab
     video = VideoReader(video_name);
 
     % extract basic informations of video
+    Fs = round(video.FrameRate);
+    
     length = video.Duration * video.FrameRate;
     length_round = round(video.Duration * video.FrameRate);
     height = video.Height;
@@ -72,20 +116,47 @@ function frame_list = video_to_frame_list(video_name)
     
 end
 
-%% FUNCTIONS - get_gaussian_pyramid
+%% FUNCTIONS - get_laplacian_pyramid
 
-function [image_gaussian, image_residual] = get_gaussian_pyramid(gaussian_stdev, frame_list, frame_index, gaussian_index)
+function [image_gaussian, image_residual] = get_laplacian_pyramid(gaussian_stdev, frame_list, frame_index, gaussian_index)
+
     image_raw_4d = frame_list(frame_index, :, :, :);
     image_raw = reshape(image_raw_4d, size(image_raw_4d, 2), size(image_raw_4d, 3), size(image_raw_4d, 4));
     
     image_original = image_raw;
     
     for i = 1: gaussian_index
+
+        % Apply Gaussian Filter
         image_blurred = imgaussfilt(image_original, gaussian_stdev);
+        
+        % Compute residual
         image_residual = image_original - image_blurred;
+        
+        % Subsample
         image_original = image_blurred(1:2:size(image_blurred,1), 1:2:size(image_blurred,2), :);
+
     end
     
     image_gaussian = image_original;
 
 end
+
+%% FUNCTIONS - get_residual_seq
+
+function residual_seq = get_residual_seq(gaussian_stdev, frame_list, gaussian_index)
+    
+    [~, image_residual_0] = get_laplacian_pyramid(gaussian_stdev, frame_list, 1, gaussian_index);
+
+    residual_seq = zeros(size(frame_list, 1), size(image_residual_0, 1), size(image_residual_0, 2), size(image_residual_0, 3));
+
+    for i = 1: size(frame_list, 1)
+        
+        [~, image_residual] = get_laplacian_pyramid(gaussian_stdev, frame_list, i, gaussian_index);
+
+        residual_seq(i, :, :, :) = image_residual;
+
+    end
+    
+end
+
