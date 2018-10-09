@@ -88,7 +88,6 @@ Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
 [gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list, 1);
 [gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, frame_list, 2);
 
-
 residual_0_cube_f_s = get_cube_f_s(Hd, residual_cube_0);
 fprintf('residual_0_cube_f_s end\n');
 toc
@@ -124,27 +123,11 @@ end
 fprintf('IMAGE RECONSTRUCTION end\n');
 toc
 
-%%
+%% IMAGE RECONSTRUCTION - VIDEO
 
-v = VideoWriter('image_reconstruct_f_s', 'Archival');
-open(v)
+make_avi(image_reconstruct_f_s, 'image_reconstruct_f_s');
 
-image_frame_filtered = zeros(size(image_residual_cube_0_filtered_scaled, 2), size(image_residual_cube_0_filtered_scaled, 3));
-image_frame_filtered_video = zeros(size(image_residual_cube_0_filtered_scaled, 2), size(image_residual_cube_0_filtered_scaled, 3));
-
-for t = 1: size(image_residual_cube_0_filtered_scaled, 1)
-
-    image_frame_filtered(:,:) = image_residual_cube_0_filtered_scaled(t,:,:);
-    image_frame_filtered_video(:,:) = max(image_frame_filtered(:,:),0);
-    writeVideo(v,image_frame_filtered_video);
-
-end
-
-close(v)
-
-% imshow(image_reconstruct_filtered(1,:,:))
-
-fprintf('IMAGE RECONSTRUCTION end\n');
+fprintf('IMAGE RECONSTRUCTION - VIDEO end\n');
 toc
 
 %% FUNCTIONS - video_to_frame_list
@@ -274,6 +257,36 @@ function cube_f_s = get_cube_f_s(Hd, cube)
 
         cube_f_s(t,:,:) = cube_f(t,:,:) * a + b;
     end
+end
+
+%% FUNCTIONS - make_avi
+
+function make_avi(cube, avi_name)
+
+    cube_s = zeros(size(cube));
+    cube_s_frame = zeros(size(cube, 2), size(cube, 3));
+    
+    v = VideoWriter(avi_name, 'Uncompressed AVI');
+    open(v)
+    
+    for t = 1: size(cube, 1)
+        
+        max_ = max(max(cube(t,:,:)));
+        min_ = min(min(cube(t,:,:)));
+        a = 1 / (max_ - min_);
+        b = min_ / (min_ - max_);
+
+        cube_s(t,:,:) = cube(t,:,:) * a + b;
+        cube_s_frame(:,:) = cube_s(t,:,:);
+
+        cube_s_frame(:,:) = max(cube_s_frame(:,:),0);
+        cube_s_frame(:,:) = min(cube_s_frame(:,:),1);
+        writeVideo(v,cube_s_frame);
+
+    end
+    
+    close(v)
+
 end
 
 %% FUNCTIONS - filter_on_residual
