@@ -88,7 +88,6 @@ Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
 [gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list, 1);
 [gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, frame_list, 2);
 
-
 residual_0_cube_f_s = get_cube_f_s(Hd, residual_cube_0);
 fprintf('residual_0_cube_f_s end\n');
 toc
@@ -101,8 +100,6 @@ gaussian_2_cube_f_s = get_cube_f_s(Hd, gaussian_cube_2);
 fprintf('gaussian_2_cube_f_s end\n');
 toc
 
-image_reconstruct_f_s = zeros(size(frame_list));
-
 for t = 1: size(frame_list, 1)
     
     image_residual_0_f_s = zeros(size(residual_0_cube_f_s,2), size(residual_0_cube_f_s,3));
@@ -113,20 +110,16 @@ for t = 1: size(frame_list, 1)
 
     image_gaussian_2_f_s = zeros(size(gaussian_2_cube_f_s,2), size(gaussian_2_cube_f_s,3));
     image_gaussian_2_f_s(:,:) = gaussian_2_cube_f_s(t,:,:);
+
+    
+    
+    
     
     image_reconstruct_1_f_s = laplacian_up(image_gaussian_2_f_s, image_residual_1_f_s);
-    image_reconstruct_0_f_s = laplacian_up(image_reconstruct_1_f_s, image_residual_0_f_s);
     
-    image_reconstruct_f_s(t,:,:) = image_reconstruct_0_f_s(:,:);
-
 end
 
-fprintf('IMAGE RECONSTRUCTION end\n');
-toc
-
-%%
-
-v = VideoWriter('image_reconstruct_f_s', 'Archival');
+v = VideoWriter('image_residual_0', 'Archival');
 open(v)
 
 image_frame_filtered = zeros(size(image_residual_cube_0_filtered_scaled, 2), size(image_residual_cube_0_filtered_scaled, 3));
@@ -261,11 +254,14 @@ function cube_f_s = get_cube_f_s(Hd, cube)
             cube_pixel_f = filter(Hd, cube_pixel);
             cube_f(:,i,j) = cube_pixel_f;
         end
+        fprintf('filtering %d/%d', i, size(cube, 2));
+        toc
     end
 
     cube_f_s = zeros(size(cube_f));
 
     for t = 1: size(cube_f, 1)
+
         max_ = max(max(cube_f(t,:,:)));
         min_ = min(min(cube_f(t,:,:)));
 
@@ -273,8 +269,12 @@ function cube_f_s = get_cube_f_s(Hd, cube)
         b = min_ / (min_ - max_);
 
         cube_f_s(t,:,:) = cube_f(t,:,:) * a + b;
+
     end
 end
+
+
+
 
 %% FUNCTIONS - filter_on_residual
 
