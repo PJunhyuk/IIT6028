@@ -145,6 +145,19 @@
       <hr/>
       <h3>5. IMAGE RECONSTRUCTION<br/><small></small></h3>
 
+      <p>First, I generate <code>cube</code> for gaussian & residual images by using <code>get_cube</code> function. It means temporal set of images.</p>
+      <p>For each pixels in image, I generated vector called <code>cube_pixel</code>. It is composed up each value of the pixel in the all frames.</p>
+      <p>Then apply <code>butterworthBandpassFilter</code> to each of them, and reconstruct <code>cube</code> with their results. It's on <code>get_cube_f_s</code> function.</p>
+      <p>I could figure out values of results become too small, so we have to upscale them.</p>
+      <p>I used <code>[min(image(:)) max(image(:))]</code> to scaling the display based on the range of pixel values in image.</p>
+      <p>For variables in codes, <code>_f</code> means filtered, and <code>_s</code> means upscaled.</p>
+      <br/>
+
+      <p>Finally we have to reconstruct original <code>cube_f_s</code> from gaussian & residual <code>cube_f_s</code>.</p>
+      <p>We can use </p>
+
+      <p></p>
+
       <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
 
       <hr class="copyright-hr"/>
