@@ -4,8 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HA#1_IIT6028</title>
-    <!-- <link rel="stylesheet" href="bootstrap.css"> -->
+    <title>HA#2_IIT6028</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -42,9 +41,13 @@
       margin-top: 30px;
     }
 
-    h2 {
+    h3 {
       margin-top: 40px;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
+    }
+
+    img.results_img {
+      width: 100%;
     }
 
     .copyright-hr {
@@ -63,7 +66,7 @@
     <div class="container">
 
       <div class="title">
-        <h1>IIT6028 HA#1&nbsp;<small>Computational Photography</small></h1>
+        <h1>IIT6028 HA#2&nbsp;<small>Computational Photography</small></h1>
       </div>
 
       <div class="student-info">
@@ -74,175 +77,80 @@
 
       <hr/>
 
-      <h2>TOPIC&nbsp;<small>IMPLEMENT A BASIC IMAGE PROCESSING PIPELINE</small></h2>
+      <h1>Eulerian Video Magnification</h1>
 
-      <div id="main-carousel" class="carousel slide" data-ride="carousel">
-        <!-- Indicators -->
-        <ol class="carousel-indicators">
-          <li data-target="#main-carousel" data-slide-to="0" class="active"></li>
-          <li data-target="#main-carousel" data-slide-to="1"></li>
-          <li data-target="#main-carousel" data-slide-to="2"></li>
-          <li data-target="#main-carousel" data-slide-to="3"></li>
-          <li data-target="#main-carousel" data-slide-to="4"></li>
-          <li data-target="#main-carousel" data-slide-to="5"></li>
-          <li data-target="#main-carousel" data-slide-to="6"></li>
-          <li data-target="#main-carousel" data-slide-to="7"></li>
-          <li data-target="#main-carousel" data-slide-to="8"></li>
-          <li data-target="#main-carousel" data-slide-to="9"></li>
-        </ol>
+      <hr/>
+      <h3>1. INITIALS AND COLOR TRANSFORMATION<br/><small>load the video, extract its frames, convert to double-precision, and convert to YIQ from RGB</small></h3>
 
-        <!-- Wrapper for slides -->
-        <div class="carousel-inner" role="listbox">
+      <p>Using <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">video_to_frame_list</a> function.</p>
+      <p>Load the video file using <code>VideoReader</code> function, extract its frame using <code>readFrame</code> function.</p>
+      <p>And convert each of the frames to the YIQ color space using <code>rgb2ntsc</code> function.</p>
 
-          <div class="item active" id="item_1">
-            <img class="results_img" src="./img/img_1.png" alt="img_1">
-            <div class="carousel-caption">
-              <h3>1. INITIALS</h3>
-              <p>original tiff image</p>
-            </div>
-          </div>
+      <br/>
+      <img class="results_img" src="./img/img_1_original_vs_yiq.png" alt="img_1_original_vs_yiq">
+      <p><i>[1 2] 1: frame #1 original / 2: frame #1 only Y from YIQ</i></p>
+      <br/>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_2.png" alt="img_2">
-            <div class="carousel-caption">
-              <h3>2. LINEARIZATION</h3>
-              <p>after linearization</p>
-            </div>
-          </div>
+      <p><a href="https://en.wikipedia.org/wiki/YIQ">YIQ</a> in WIKIPEDIA</p>
+      <p>In YIQ color space, Y component represents the luma information, and is the only component used by black-and-white television recievers.</p>
+      <p>I and Q represent the chrominance information.</p>
+      <p>So I just use Y component in this project.</p>
+      <br/>
+      <p>Total required time: </p>
+      <p>It takes quite a lot of time. Because we have to apply all processes in every frames.</p>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_3.png" alt="img_3">
-            <div class="carousel-caption">
-              <h3>3. IDENTIFYING THE CORRECT BAYER PATTERN</h3>
-              <p>left-top: bggr / right-top: gbrg / left-bottom: grbg / right-bottom: rggb(best)</p>
-            </div>
-          </div>
+      <hr/>
+      <h3>2. LAPLACIAN PYRAMID<br/><small></small></h3>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_3_1.png" alt="img_3_1">
-            <div class="carousel-caption">
-              <h3>3. IDENTIFYING THE CORRECT BAYER PATTERN</h3>
-              <p>results of rggb(best)</p>
-            </div>
-          </div>
+      <p>Using <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">get_laplacian_pyramid</a> function.</p>
+      <p><code>get_laplacian_pyramid</code> function gets <code>image_original</code>.</p>
+      <p>And it apply gaussian filter on it, to generate <code>image_blurred</code>.</p>
+      <p>When applying gaussan filter, I set <code>gaussian_stdev</code> as 2.</p>
+      <p>Then calculate <code>image_residual</code> as <code>image_origianl - image_blurred</code>.</p>
+      <p>I made it as function to repeat this process easily.</p>
+      <br/>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_4.png" alt="img_4">
-            <div class="carousel-caption">
-              <h3>4. WHITE BALANCING</h3>
-              <p>top: gray world / bottom: white world(best)</p>
-            </div>
-          </div>
+      <p>We can easily figure out <code>image_gaussian_N</code> is 2^N smaller then original image.</p>
+      <p>And <code>image_residual_N</code> is 2^N smaller then original image.</p>
+      <p>So each cycle, we generate <code>image_gaussian_N+1</code> and <code>image_residual_N</code> from <code>image_guassian_N</code>.</p>
+      <br/>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_4_1.png" alt="img_4_1">
-            <div class="carousel-caption">
-              <h3>4. WHITE BALANCING</h3>
-              <p>results of white world automatic white balancing(best)</p>
-            </div>
-          </div>
+      <p>In this project, I applied laplacian pyramid twice, so generated guassian_1, guassian_2, residual_0, residual_1.</p>
+      <p>You can check it by following image. All results are matched with size of original frame, using <code>imresize</code> function in matlab.</p>
+      <p><code>imresize</code> function uses bicubic interpolation to upsample it.</p>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_5.png" alt="img_5">
-            <div class="carousel-caption">
-              <h3>5. DEMOSAICING</h3>
-              <p>used results of white world AWB</p>
-            </div>
-          </div>
+      <br/>
+      <img class="results_img" src="./img/img_2_laplacian_pyramid.png" alt="img_2_laplacian_pyramid">
+      <p><i>[1 4 / 2 5 / 3 -] 1: frame_original / 2: gaussian_1(*2) / 3: gaussain_2(*4) / 4: residual_0 / 5: residual_1(*2)</i></p>
+      <br/>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_6.png" alt="img_6">
-            <div class="carousel-caption">
-              <h3>6. BRIGHTNESS ADJUSTMENT AND GAMMA CORRECTION</h3>
-              <p>used results of white world AWB / .PNG(no compression)</p>
-            </div>
-          </div>
+      <p>And we can reconstruct original image from low level of gaussian & residual images.</p>
+      <p>We can reconstruct <code>image_reconstruct_N</code> from <code>image_gaussian_N+1</code> and <code>image_residual_N</code>.</p>
+      <p>Just generate <code>image_gaussian_up</code> from upsampling <code>image_gaussian_N+1</code> using <code>imresize</code> function.</p>
+      <p>And add <code>image_gaussian_up</code> and <code>image_residual_N</code> for generate <code>image_reconstruct</code>.</p>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_7.jpeg" alt="img_7">
-            <div class="carousel-caption">
-              <h3>7. COMPRESSION</h3>
-              <p>.JPEG, quality setting 95(compression)</p>
-            </div>
-          </div>
+      <br/>
+      <img class="results_img" src="./img/img_2_recontruct.png" alt="img_2_recontruct">
+      <p><i>[1 2] 1: frame_original / 2: reconstructed image by image_residual_0, image_residual_1, image_gaussian_2</i></p>
+      <br/>
 
-          <div class="item">
-            <img class="results_img" src="./img/img_7_1.png" alt="img_7_1">
-            <div class="carousel-caption">
-              <h3>7. COMPRESSION</h3>
-              <p>left-to-right, quality setting of JPEG 5-10-15-20-30-50-95 </p>
-            </div>
-          </div>
+      <p>We can check original image and reconstructed image by laplacian pyramid is almost same.</p>
 
-        </div>
+      <hr/>
+      <h3>3. TEMPORAL FILTERING<br/><small></small></h3>
 
-        <!-- Controls -->
-        <a class="left carousel-control" href="#main-carousel" role="button" data-slide="prev">
-          <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
-          <span class="sr-only">Previous</span>
-        </a>
-        <a class="right carousel-control" href="#main-carousel" role="button" data-slide="next">
-          <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
-          <span class="sr-only">Next</span>
-        </a>
-      </div>
+      <hr/>
+      <h3>4. EXTRACTING THE FREQUENCY BAND OF INTEREST<br/><small></small></h3>
 
-      <h2>1. INITIALS&nbsp;<small>load, check, and convert into a double-precision array</small></h2>
-
-      <p><strong>bits per integer? </strong>16 bits - uint16</p>
-      <p><strong>width? </strong>4290</p>
-      <p><strong>height? </strong>2856</p>
-
-      <p>Print them using fprintf function.</p>
-
-      <h2>2. LINEARIZATION&nbsp;<small>shift and scale, within the range [0, 1]</small></h2>
-      <p>Linear transform mapped.</p>
-
-      <h2>3. IDENTIFYING THE CORRECT BAYER PATTERN&nbsp;<small>identify Bayer patterns</small></h2>
-
-      <p><strong>version? </strong>rggb</p>
-      <p><strong>reason? </strong>
-        <br/>I checked all results image of four possible red-green-blue patterns.
-        <br/>Result of rggb is best representor of original image.
-        <br/>And also, I calculated sum of differences between pixels, and I figured out difference betweeen img_2 and img_3 is smallest.
-        <br/>It means img_2 and img_3 represents same color, so Bayer pattern of this camera is rggb.
-      </p>
-
-      <p>Calculate img1, img2, img3, img4. And generate test images with cat function</p>
-
-      <h2>4. WHITE BALANCING&nbsp;<small>white world and gray world automatic white balancing</small></h2>
-
-      <p><strong>best? </strong>white world automatic white balancing</p>
-      <p>Implemented two functions: white_balancing_grey and white_balancing_white.</p>
-
-      <h2>5. DEMOSAICING&nbsp;<small>use bilinear interpolation</small></h2>
-      <p>Just use interp2 function.</p>
-
-      <h2>6. BRIGHTNESS ADJUSTMENT AND GAMMA CORRECTION&nbsp;<small>apply non-linear gamma correction</small></h2>
-      <p>Implement given non-linear function to apply gamma correction.</p>
-
-      <h2>7. COMPRESSION&nbsp;<small>PNG vs JPEG, and compression ratio</small></h2>
-
-      <p><strong>difference between .PNG and .JPEG(quality 95)? </strong>honestly, nope</p>
-      <p><strong>size of the uncompressed file?(.PNG) </strong>14,439,587 bytes</p>
-      <p><strong>size of the compressed file?(.JPEG, 95) </strong>2,679,370 bytes</p>
-      <p><strong>compression ratio? </strong>2,679,370/14,439,587 = 0.1856</p>
-      <p><strong>compression ratio of quality 50? </strong>608,555/14,439,587 = 0.0421</p>
-      <p><strong>compression ratio of quality 30? </strong>452,203/14,439,587 = 0.0313</p>
-      <p><strong>compression ratio of quality 20? </strong>366,003/14,439,587 = 0.0253</p>
-      <p><strong>compression ratio of quality 15? </strong>321,151/14,439,587 = 0.0222</p>
-      <p><strong>compression ratio of quality 10? </strong>273,577/14,439,587 = 0.0189</p>
-      <p><strong>compression ratio of quality 5? </strong>222,342/14,439,587 = 0.0154</p>
-      <p><strong>the lowest setting for indistinguishable, compression ratio? </strong>quality 20 -> compression ratio 0.0253</p>
-
-      <p>Used imwrite function.</p>
+      <hr/>
+      <h3>5. IMAGE RECONSTRUCTION<br/><small></small></h3>
 
       <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
 
       <hr class="copyright-hr"/>
 
       <div class="copyright">
-        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a></p>
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A2/web">GitHub Repo</a></p>
         <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
       </div>
 
