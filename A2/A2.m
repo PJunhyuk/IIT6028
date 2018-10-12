@@ -46,6 +46,8 @@ toc
 
 [gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list);
 [gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, gaussian_cube_1);
+[gaussian_cube_3, residual_cube_2] = get_cube(gaussian_stdev, gaussian_cube_2);
+[gaussian_cube_4, residual_cube_3] = get_cube(gaussian_stdev, gaussian_cube_3);
 
 fprintf('LAPLACIAN PYRAMID end\n');
 toc
@@ -95,7 +97,15 @@ residual_cube_1_filtered = filter_cube(Hd, residual_cube_1);
 fprintf('residual_cube_1_filtered end\n');
 toc
 
-gaussian_cube_2_filtered = filter_cube(Hd, gaussian_cube_2);
+residual_cube_2_filtered = filter_cube(Hd, residual_cube_2);
+fprintf('residual_cube_1_filtered end\n');
+toc
+
+residual_cube_3_filtered = filter_cube(Hd, residual_cube_3);
+fprintf('residual_cube_1_filtered end\n');
+toc
+
+gaussian_cube_4_filtered = filter_cube(Hd, gaussian_cube_4);
 fprintf('gaussian_cube_2_filtered end\n');
 toc
 
@@ -112,19 +122,28 @@ frame_list_reconstructed = zeros(height, width, ch, frame_number);
 
 image_residual_0_re = zeros(size(residual_cube_0_filtered,1), size(residual_cube_0_filtered,2), ch); % re means reconstructed
 image_residual_1_re = zeros(size(residual_cube_1_filtered,1), size(residual_cube_1_filtered,2), ch);
-image_gaussian_2_re = zeros(size(gaussian_cube_2_filtered,1), size(gaussian_cube_2_filtered,2), ch);
+image_residual_2_re = zeros(size(residual_cube_2_filtered,1), size(residual_cube_2_filtered,2), ch);
+image_residual_3_re = zeros(size(residual_cube_3_filtered,1), size(residual_cube_3_filtered,2), ch);
+image_gaussian_4_re = zeros(size(gaussian_cube_4_filtered,1), size(gaussian_cube_4_filtered,2), ch);
 
 for t = 1: frame_number
-     
+
     image_residual_0_re(:,:,1) = residual_cube_0_filtered(:,:,1,t);
     image_residual_1_re(:,:,1) = residual_cube_1_filtered(:,:,1,t);
-    image_gaussian_2_re(:,:,1) = gaussian_cube_2_filtered(:,:,1,t);
-     
-    image_reconstructed_1 = laplacian_up(image_gaussian_2_re, image_residual_1_re);
-    image_reconstructed_1 = alpha .* image_reconstructed_1;
-    image_reconstructed_0 = laplacian_up(image_reconstructed_1, image_residual_0_re);
-     
-    frame_list_reconstructed(:,:,1,t) = abs(image_reconstructed_0(:,:,1));
+    image_residual_2_re(:,:,1) = residual_cube_2_filtered(:,:,1,t);
+    image_residual_3_re(:,:,1) = residual_cube_3_filtered(:,:,1,t);
+    image_gaussian_4_re(:,:,1) = gaussian_cube_4_filtered(:,:,1,t);
+    
+    alpha_0 = 100;
+    alpha_1 = 100;
+    alpha_2 = 100;
+    alpha_3 = 100;
+    alpha_4 = 100;
+    
+    image_reconstructed_frame = frame_list(:,:,1,t) + alpha_0 * image_residual_0_re + alpha_1 * imresize(image_residual_1_re, 2) + ...
+        + alpha_2 * imresize(image_residual_2_re, 4) + alpha_3 * imresize(image_residual_3_re, 8) + alpha_4 * imresize(image_gaussian_4_re, 16);
+    
+    frame_list_reconstructed(:,:,1,t) = abs(image_reconstructed_frame(:,:,1));
  
 end
 
