@@ -6,21 +6,25 @@ gaussian_stdev = 2;
 %% INITIALS AND COLOR TRANSFORMATION
 
 % video to frame_list(double-precision, [0, 1], YIQ)
-[Fs, frame_list] = video_to_frame_list(video_name);
+% [Fs, frame_list] = video_to_frame_list(video_name);
 %%%% Fs: 30
-%%%% frame_list: (frame_number, height, width) -> only Y in YIQ space
+%%%% frame_list: (height, width, ch, frame_number)
+
+% [height, width, ch, frame_number] = size(frame_list);
+
+load('frame_list.mat');
 
 fprintf('INITIALS AND COLOR TRANSFORMATION end\n');
 toc
 
 %% INITIALS AND COLOR TRANSFOMRATION - RESULTS
 
-video = VideoReader(video_name);
-frame_1 = readFrame(video);
+% video = VideoReader(video_name);
+% frame_1 = readFrame(video);
 %%%% frame_1: first frame in video, raw -> (height, width, ch)
 
-frame_1_y = zeros(size(frame_1, 1), size(frame_1, 2), 1);
-frame_1_y(:,:,1) = frame_list(1,:,:);
+% frame_1_y = zeros(size(frame_1, 1), size(frame_1, 2), 1);
+% frame_1_y(:,:,1) = frame_list(1,:,:);
 
 % subplot(1, 2, 1) %%%% frame #1 origianl
 % imshow(frame_1)
@@ -29,16 +33,19 @@ frame_1_y(:,:,1) = frame_list(1,:,:);
 
 %% LAPLACIAN PYRAMID
 
-[image_gaussian_1, image_residual_0] = get_laplacian_pyramid(gaussian_stdev, frame_list, 1, 1);
+%%% just for frame_index: 1
+% image_1 = zeros(height, width, ch);
+% image_1(:,:,:) = frame_list(:,:,:,1);
+
+% [image_1_gaussian_1, image_1_residual_0] = get_laplacian_pyramid(gaussian_stdev, image_1);
 %%%% image_residual_0: (height, width)
 %%%% image_gaussain_1: (height/2, width/2)
-[image_gaussian_2, image_residual_1] = get_laplacian_pyramid(gaussian_stdev, frame_list, 1, 2);
+% [image_1_gaussian_2, image_1_residual_1] = get_laplacian_pyramid(gaussian_stdev, image_1_gaussian_1);
 %%%% image_residual_1: (height/2, width/2)
 %%%% image_gaussain_2: (height/4, width/4)
 
-% residual_seq_0 = get_residual_seq(2, frame_list, 1);
-% %%% residual_seq_0: (frame_length, height, width, ch)
-% residual_seq_1 = get_residual_seq(2, frame_list, 2);
+[gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list);
+[gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, gaussian_cube_1);
 
 fprintf('LAPLACIAN PYRAMID end\n');
 toc
@@ -58,8 +65,8 @@ toc
 
 %% LAPLACIAN PYRAMID - RECONSTRUCT
 
-image_reconstruct_1 = laplacian_up(image_gaussian_2, image_residual_1);
-image_reconstruct_0 = laplacian_up(image_reconstruct_1, image_residual_0);
+% image_reconstruct_1 = laplacian_up(image_gaussian_2, image_residual_1);
+% image_reconstruct_0 = laplacian_up(image_reconstruct_1, image_residual_0);
 
 % subplot(1, 2, 1)
 % imshow(frame_1_y)
@@ -85,38 +92,34 @@ toc
 
 Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
 
-[gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list, 1);
-[gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, frame_list, 2);
-
-residual_0_cube_f_s = get_cube_f_s(Hd, residual_cube_0);
-fprintf('residual_0_cube_f_s end\n');
+residual_cube_0_filtered = filter_cube(Hd, residual_cube_0);
+fprintf('residual_cube_0_filtered end\n');
 toc
 
-residual_1_cube_f_s = get_cube_f_s(Hd, residual_cube_1);
-fprintf('residual_1_cube_f_s end\n');
+residual_cube_1_filtered = filter_cube(Hd, residual_cube_1);
+fprintf('residual_cube_1_filtered end\n');
 toc
 
-gaussian_2_cube_f_s = get_cube_f_s(Hd, gaussian_cube_2);
-fprintf('gaussian_2_cube_f_s end\n');
+gaussian_cube_2_filtered = filter_cube(Hd, gaussian_cube_2);
+fprintf('gaussian_cube_2_filtered end\n');
 toc
 
-image_reconstruct_f_s = zeros(size(frame_list));
+frame_list_reconstructed = zeros(height, width, ch, frame_number);
 
-for t = 1: size(frame_list, 1)
-    
-    image_residual_0_f_s = zeros(size(residual_0_cube_f_s,2), size(residual_0_cube_f_s,3));
-    image_residual_0_f_s(:,:) = residual_0_cube_f_s(t,:,:);
-    
-    image_residual_1_f_s = zeros(size(residual_1_cube_f_s,2), size(residual_1_cube_f_s,3));
-    image_residual_1_f_s(:,:) = residual_1_cube_f_s(t,:,:);
+image_residual_0_re = zeros(size(residual_cube_0_filtered,1), size(residual_cube_0_filtered,2)); % re means reconstructed
+image_residual_1_re = zeros(size(residual_cube_1_filtered,1), size(residual_cube_1_filtered,2));
+image_gaussian_2_re = zeros(size(gaussian_cube_2_filtered,1), size(gaussian_cube_2_filtered,2));
 
-    image_gaussian_2_f_s = zeros(size(gaussian_2_cube_f_s,2), size(gaussian_2_cube_f_s,3));
-    image_gaussian_2_f_s(:,:) = gaussian_2_cube_f_s(t,:,:);
+for t = 1: frame_number
     
-    image_reconstruct_1_f_s = laplacian_up(image_gaussian_2_f_s, image_residual_1_f_s);
-    image_reconstruct_0_f_s = laplacian_up(image_reconstruct_1_f_s, image_residual_0_f_s);
+    image_residual_0_re(:,:) = residual_cube_0_filtered(t,:,:);
+    image_residual_1_re(:,:) = residual_cube_1_filtered(t,:,:);
+    image_gaussian_2_re(:,:) = gaussian_cube_2_filtered(t,:,:);
     
-    image_reconstruct_f_s(t,:,:) = image_reconstruct_0_f_s(:,:);
+    image_reconstructed_1 = laplacian_up(image_gaussian_2_re, image_residual_1_re);
+    image_reconstructed_0 = laplacian_up(image_reconstructed_1, image_residual_0_re);
+    
+    frame_list_reconstructed(t,:,:) = image_reconstructed_0(:,:);
 
 end
 
@@ -125,7 +128,20 @@ toc
 
 %% IMAGE RECONSTRUCTION - VIDEO
 
-make_avi(image_reconstruct_f_s, 'image_reconstruct_f_s');
+make_avi(frame_list, 'frame_list');
+toc
+
+make_avi(frame_list_reconstructed, 'frame_list_reconstructed');
+toc
+
+make_avi(gaussian_cube_1, 'gaussian_cube_1');
+make_avi(gaussian_cube_2, 'gaussian_cube_2');
+make_avi(residual_cube_0, 'residual_cube_0');
+make_avi(residual_cube_1, 'residual_cube_1');
+
+make_avi(residual_0_cube_f_s, 'residual_0_cube_f_s');
+make_avi(residual_1_cube_f_s, 'residual_1_cube_f_s');
+make_avi(gaussian_2_cube_f_s, 'gaussian_2_cube_f_s');
 
 fprintf('IMAGE RECONSTRUCTION - VIDEO end\n');
 toc
@@ -146,8 +162,7 @@ function [Fs, frame_list] = video_to_frame_list(video_name)
     width = video.Width;
     ch = video.BitsPerPixel / 8;
     
-%     frame_list = zeros(length_round, height, width, ch);
-    frame_list = zeros(length_round, height, width);
+    frame_list = zeros(height, width, ch, length_round);
 
     % frames -> array
     for frame_index = 1: length_round-1
@@ -160,7 +175,7 @@ function [Fs, frame_list] = video_to_frame_list(video_name)
         % RGB to YIQ
         frame = rgb2ntsc(frame);
         
-        frame_list(frame_index, :, :, :) = frame(:, :, 1);
+        frame_list(:, :, :, frame_index) = frame(:, :, :);
     end
 
     % frames -> array: for last frame
@@ -175,34 +190,24 @@ function [Fs, frame_list] = video_to_frame_list(video_name)
     % RGB to YIQ
     frame = rgb2ntsc(frame);
 
-    frame_list(frame_index, :, :, :) = frame(:, :, 1);
+    frame_list(:, :, :, frame_index) = frame(:, :, :);
     
 end
 
 %% FUNCTIONS - get_laplacian_pyramid
 
-function [image_gaussian, image_residual] = get_laplacian_pyramid(gaussian_stdev, frame_list, frame_index, gaussian_index)
+function [image_gaussian, image_residual] = get_laplacian_pyramid(gaussian_stdev, image_original)
 
-    image_raw = zeros(size(frame_list, 2), size(frame_list, 3));
-    image_raw(:, :) = frame_list(frame_index, :, :);
+    [height, width, ~] = size(image_original);
     
-    image_original = image_raw;
-    %%%% image_original: (height, width)
-    
-    for i = 1: gaussian_index
+    % Apply Gaussian Filter
+    image_blurred = imgaussfilt(image_original, gaussian_stdev);
 
-        % Apply Gaussian Filter
-        image_blurred = imgaussfilt(image_original, gaussian_stdev);
-        
-        % Compute residual
-        image_residual = image_original - image_blurred;
-        
-        % Subsample
-        image_original = image_blurred(1:2:size(image_blurred,1), 1:2:size(image_blurred,2));
+    % Compute residual
+    image_residual = image_original - image_blurred;
 
-    end
-    
-    image_gaussian = image_original;
+    % Subsample
+    image_gaussian = image_blurred(1:2:height, 1:2:width, :);
 
 end
 
@@ -217,46 +222,44 @@ end
 
 %% FUNCTIONS - get_cube
 
-function [gaussian_cube, residual_cube] = get_cube(gaussian_stdev, frame_list, gaussian_index)
+function [gaussian_cube, residual_cube] = get_cube(gaussian_stdev, gaussian_cube_original)
+
+    [height_, width_, ch, frame_number] = size(gaussian_cube_original);
     
     %%%% Initialize its size
-    [image_gaussian_0, image_residual_0] = get_laplacian_pyramid(gaussian_stdev, frame_list, 1, gaussian_index);
-    residual_cube = zeros(size(frame_list, 1), size(image_residual_0, 1), size(image_residual_0, 2));
-    gaussian_cube = zeros(size(frame_list, 1), size(image_gaussian_0, 1), size(image_gaussian_0, 2));
+    gaussian_cube = zeros(fix(height_/2), fix(width_/2), ch, frame_number);
+    residual_cube = zeros(height_, width_, ch, frame_number);
 
-    for i = 1: size(frame_list, 1)
-        [image_gaussian, image_residual] = get_laplacian_pyramid(gaussian_stdev, frame_list, i, gaussian_index);
-        residual_cube(i,:,:) = image_residual;
-        gaussian_cube(i,:,:) = image_gaussian;
+    for i = 1: frame_number
+        gaussian_frame = zeros(height_, width_, ch);
+        gaussian_frame(:,:,:) = gaussian_cube_original(:,:,:,i);
+        
+        [image_gaussian, image_residual] = get_laplacian_pyramid(gaussian_stdev, gaussian_frame);
+        residual_cube(:,:,:,i) = image_residual;
+        gaussian_cube(:,:,:,i) = image_gaussian;
     end
     
 end
 
-%% FUNCTIONS - get_cube_f_s
+%% FUNCTIONS - filter_cube
 
-function cube_f_s = get_cube_f_s(Hd, cube)
+function cube_filtered = filter_cube(Hd, cube)
 
-    cube_f = zeros(size(cube,1), size(cube,2), size(cube,3));
+    [height, width, ch, frame_count] = size(cube);
 
-    for i = 1: size(cube, 2)
-        for j = 1: size(cube, 3)
-            cube_pixel = cube(:,i,j);
-            cube_pixel_f = filter(Hd, cube_pixel);
-            cube_f(:,i,j) = cube_pixel_f;
+    cube_filtered = zeros(height, width, ch, frame_count);
+    cube_pixel = zeros(frame_count, 1);
+    
+    Hd_fft = freqz(Hd, frame_count);
+
+    for i = 1: height
+        for j = 1: width
+            cube_pixel(:, 1) = cube(i,j,1,:);
+            cube_pixel_filtered = ifft(fft(cube_pixel) .* Hd_fft);
+            cube_filtered(i,j,1,:) = cube_pixel_filtered(:, 1);
         end
     end
-
-    cube_f_s = zeros(size(cube_f));
-
-    for t = 1: size(cube_f, 1)
-        max_ = max(max(cube_f(t,:,:)));
-        min_ = min(min(cube_f(t,:,:)));
-
-        a = 1 / (max_ - min_);
-        b = min_ / (min_ - max_);
-
-        cube_f_s(t,:,:) = cube_f(t,:,:) * a + b;
-    end
+    
 end
 
 %% FUNCTIONS - make_avi
