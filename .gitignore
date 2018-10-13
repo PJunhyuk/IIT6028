@@ -1,4 +1,7 @@
 A1/src
 *.pdf
-A2/*.avi
+*.avi
 *.asv
+*.mp4
+*.mat
+*.zip
