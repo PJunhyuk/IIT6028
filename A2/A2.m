@@ -1,3 +1,6 @@
+clear;
+clc;
+
 tic
 
 video_name = 'data/baby2.mp4';
@@ -6,13 +9,13 @@ gaussian_stdev = 2;
 %% INITIALS AND COLOR TRANSFORMATION
 
 % video to frame_list(double-precision, [0, 1], YIQ)
-% [Fs, frame_list] = video_to_frame_list(video_name);
+[Fs, frame_list] = video_to_frame_list(video_name);
 %%%% Fs: 30
 %%%% frame_list: (height, width, ch, frame_number)
 
-% [height, width, ch, frame_number] = size(frame_list);
+[height, width, ch, frame_number] = size(frame_list);
 
-load('frame_list.mat');
+% load('frame_list.mat');
 
 fprintf('INITIALS AND COLOR TRANSFORMATION end\n');
 toc
@@ -21,15 +24,14 @@ toc
 
 % video = VideoReader(video_name);
 % frame_1 = readFrame(video);
-%%%% frame_1: first frame in video, raw -> (height, width, ch)
-
-% frame_1_y = zeros(size(frame_1, 1), size(frame_1, 2), 1);
-% frame_1_y(:,:,1) = frame_list(1,:,:);
+% 
+% frame_1_yiq = zeros(height, width, ch);
+% frame_1_yiq(:,:,:) = frame_list(:,:,:,1);
 
 % subplot(1, 2, 1) %%%% frame #1 origianl
 % imshow(frame_1)
-% subplot(1, 2, 2) %%%% frame #1 only Y
-% imshow(frame_1_y)
+% subplot(1, 2, 2) %%%% frame #1 YIQ
+% imshow(frame_1_yiq)
 
 %% LAPLACIAN PYRAMID
 
@@ -38,11 +40,32 @@ toc
 % image_1(:,:,:) = frame_list(:,:,:,1);
 
 % [image_1_gaussian_1, image_1_residual_0] = get_laplacian_pyramid(gaussian_stdev, image_1);
-%%%% image_residual_0: (height, width)
-%%%% image_gaussain_1: (height/2, width/2)
 % [image_1_gaussian_2, image_1_residual_1] = get_laplacian_pyramid(gaussian_stdev, image_1_gaussian_1);
-%%%% image_residual_1: (height/2, width/2)
-%%%% image_gaussain_2: (height/4, width/4)
+
+%% LAPLACIAN PYRAMID - RESULTS
+
+% subplot(3, 2, 1)
+% imshow(frame_1_yiq)
+% subplot(3, 2, 3)
+% imshow(imresize(image_1_gaussian_1, 2))
+% subplot(3, 2, 5)
+% imshow(imresize(image_1_gaussian_2, 4))
+% subplot(3, 2, 2)
+% imshow(image_1_residual_0)
+% subplot(3, 2, 4)
+% imshow(imresize(image_1_residual_1, 2))
+
+%% LAPLACIAN PYRAMID - RECONSTRUCT
+
+% image_reconstruct_1 = laplacian_up(image_1_gaussian_2, image_1_residual_1);
+% image_reconstruct_0 = laplacian_up(image_1_residual_1, image_1_residual_0);
+
+% subplot(1, 2, 1)
+% imshow(frame_1_yiq)
+% subplot(1, 2, 2)
+% imshow(image_reconstruct_0)
+
+%% LAPLACIAN PYRAMID - CUBE
 
 [gaussian_cube_1, residual_cube_0] = get_cube(gaussian_stdev, frame_list);
 [gaussian_cube_2, residual_cube_1] = get_cube(gaussian_stdev, gaussian_cube_1);
@@ -52,32 +75,11 @@ toc
 fprintf('LAPLACIAN PYRAMID end\n');
 toc
 
-%% LAPLACIAN PYRAMID - RESULTS
-
-% subplot(3, 2, 1)
-% imshow(frame_1_y)
-% subplot(3, 2, 3)
-% imshow(imresize(image_gaussian_1, 2))
-% subplot(3, 2, 5)
-% imshow(imresize(image_gaussian_2, 4))
-% subplot(3, 2, 2)
-% imshow(image_residual_0)
-% subplot(3, 2, 4)
-% imshow(imresize(image_residual_1, 2))
-
-%% LAPLACIAN PYRAMID - RECONSTRUCT
-
-% image_reconstruct_1 = laplacian_up(image_gaussian_2, image_residual_1);
-% image_reconstruct_0 = laplacian_up(image_reconstruct_1, image_residual_0);
-
-% subplot(1, 2, 1)
-% imshow(frame_1_y)
-% subplot(1, 2, 2)
-% imshow(image_reconstruct_0)
-
 %% TEMPORAL FILTERING
 
-% residual_seq_0_filtered = filter_on_residual(residual_seq_0, Fs);
+[residual_seq_0_f, residual_seq_0_filtered] = check_cube_freq(residual_cube_0);
+
+% plot(residual_seq_0_f, residual_seq_0_filtered);
 
 fprintf('TEMPORAL FILTERING end\n');
 toc
@@ -87,27 +89,14 @@ toc
 %%%% _f: filtered
 %%%% _s: scaled
 
-Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
+% Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
+Hd = butterworthBandpassFilter(Fs, 256, 0.8, 1);
 
 residual_cube_0_filtered = filter_cube(Hd, residual_cube_0);
-fprintf('residual_cube_0_filtered end\n');
-toc
-
 residual_cube_1_filtered = filter_cube(Hd, residual_cube_1);
-fprintf('residual_cube_1_filtered end\n');
-toc
-
 residual_cube_2_filtered = filter_cube(Hd, residual_cube_2);
-fprintf('residual_cube_1_filtered end\n');
-toc
-
 residual_cube_3_filtered = filter_cube(Hd, residual_cube_3);
-fprintf('residual_cube_1_filtered end\n');
-toc
-
 gaussian_cube_4_filtered = filter_cube(Hd, gaussian_cube_4);
-fprintf('gaussian_cube_2_filtered end\n');
-toc
 
 clear('Hd');
 
@@ -116,9 +105,13 @@ toc
 
 %% IMAGE RECONSTRUCTION
 
-alpha = 100;
-
 frame_list_reconstructed = zeros(height, width, ch, frame_number);
+
+alpha_0 = 100;
+alpha_1 = 100;
+alpha_2 = 100;
+alpha_3 = 100;
+alpha_4 = 100;
 
 image_residual_0_re = zeros(size(residual_cube_0_filtered,1), size(residual_cube_0_filtered,2), ch); % re means reconstructed
 image_residual_1_re = zeros(size(residual_cube_1_filtered,1), size(residual_cube_1_filtered,2), ch);
@@ -134,16 +127,10 @@ for t = 1: frame_number
     image_residual_3_re(:,:,1) = residual_cube_3_filtered(:,:,1,t);
     image_gaussian_4_re(:,:,1) = gaussian_cube_4_filtered(:,:,1,t);
     
-    alpha_0 = 100;
-    alpha_1 = 100;
-    alpha_2 = 100;
-    alpha_3 = 100;
-    alpha_4 = 100;
-    
     image_reconstructed_frame = frame_list(:,:,1,t) + alpha_0 * image_residual_0_re + alpha_1 * imresize(image_residual_1_re, 2) + ...
-        + alpha_2 * imresize(image_residual_2_re, 4) + alpha_3 * imresize(image_residual_3_re, 8) + alpha_4 * imresize(image_gaussian_4_re, 16);
+        + alpha_2 * imresize(image_residual_2_re, 4) + alpha_3 * imresize(image_residual_3_re, [height, width]) + alpha_4 * imresize(image_gaussian_4_re, [height, width]);
     
-    frame_list_reconstructed(:,:,1,t) = abs(image_reconstructed_frame(:,:,1));
+    frame_list_reconstructed(:,:,1,t) = image_reconstructed_frame(:,:,1);
  
 end
 
@@ -158,7 +145,7 @@ toc
 % fprintf('SAVE frame_list end\n');
 % toc
 
-make_avi(frame_list_reconstructed, 'frame_list_reconstructed');
+make_avi(frame_list_reconstructed, '_reconstructed');
 fprintf('SAVE frame_list_reconstructed end\n');
 toc
 
@@ -187,7 +174,7 @@ function [Fs, frame_list] = video_to_frame_list(video_name)
     for frame_index = 1: length_round-1
         video.CurrentTime = frame_index * 1 / video.FrameRate;
         frame = readFrame(video);
-        
+                
         % uint8 -> double-precision / to range [0, 1]
         frame = double(frame) / 255;
         
@@ -202,7 +189,7 @@ function [Fs, frame_list] = video_to_frame_list(video_name)
 
     video.CurrentTime = length * 1 / video.FrameRate;
     frame = readFrame(video);
-
+    
     % uint8 -> double-precision / to range [0, 1]
     frame = double(frame) / 255;
 
@@ -246,7 +233,7 @@ function [gaussian_cube, residual_cube] = get_cube(gaussian_stdev, gaussian_cube
     [height_, width_, ch, frame_number] = size(gaussian_cube_original);
     
     %%%% Initialize its size
-    gaussian_cube = zeros(fix(height_/2), fix(width_/2), ch, frame_number);
+    gaussian_cube = zeros(fix((height_+1)/2), fix((width_+1)/2), ch, frame_number);
     residual_cube = zeros(height_, width_, ch, frame_number);
 
     for i = 1: frame_number
@@ -275,7 +262,7 @@ function cube_filtered = filter_cube(Hd, cube)
         for j = 1: width
             cube_pixel(:,1) = cube(i,j,1,:);
             cube_pixel_fft = fft(cube_pixel);
-            cube_pixel_filtered = ifft(cube_pixel_fft .* Hd_fft);
+            cube_pixel_filtered = abs(ifft(cube_pixel_fft .* Hd_fft));
             cube_filtered(i,j,1,:) = cube_pixel_filtered(:, 1);
         end
     end
@@ -310,41 +297,29 @@ end
 
 %% FUNCTIONS - filter_on_residual
 
-function residual_seq_filtered = filter_on_residual(residual_seq, Fs)
+function [f, cube_fft] = check_cube_freq(cube)
 
-    L = size(residual_seq, 1);
-%     T = 1/Fs;
-%     t = (0:L-1) * T;
+    [height, width, ~, frame_number] = size(cube);
+    
+    Fs = 30;
 
-    residual_seq_filtered = zeros(size(residual_seq, 1) / 2 + 1, size(residual_seq, 2), size(residual_seq, 3), size(residual_seq, 4));
-    Hd = butterworthBandpassFilter(Fs, 256, 0.83, 1);
+    f = Fs * (0:(fix(frame_number/2)))/frame_number;
 
-    for i = 1: size(residual_seq, 2)
-        for j = 1: size(residual_seq, 3)
-            for ch = 1: size(residual_seq, 4)
+    cube_fft = zeros(fix(frame_number/2) + 1, 1);
+    cube_pixel = zeros(frame_number, 1);
 
-                x = residual_seq(:, i, j, ch);
-                fftx = fft(x);
+    for i = 1: height
+        for j = 1: width
 
-                P2 = abs(fftx/L);
-                P1 = P2(1:L/2+1);
-                P1(2:end-1) = 2*P1(2:end-1);
+            cube_pixel(:,1) = cube(i, j, 1, :);
+            fftx = fft(cube_pixel);
+ 
+            P2 = abs(fftx/frame_number);
+            P1 = P2(1:fix(frame_number/2)+1);
+            P1(2:end-1) = 2*P1(2:end-1);
 
-                f = Fs * (0:(L/2))/L;
+            cube_fft(:,1) = cube_fft(:,1) + P1(:,1);
 
-                P1_filtered = filter(Hd, P1);
-
-%                 plot(f, P1)
-%                 hold on
-%                 plot(f, P1_filtered)
-%                 hold off
-
-                ifftx = ifft(P1_filtered);
-                ifftx = real(ifftx/L);
-
-                residual_seq_filtered(:, i, j, ch) = ifftx;
-
-            end
         end
     end
     
