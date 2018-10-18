@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HA#2_IIT6028</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <script>
+    </script>
+    <style>
+    @import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .container {
+      padding-bottom: 20px;
+    }
+
+    .title {
+      margin-top: 30px;
+    }
+    .student-info {
+      float: right;
+      text-align: right;
+    }
+
+    hr {
+      width: 100%;
+    }
+
+    #main-carousel {
+      width: 1000px;
+      left: 50%;
+      margin-left: -500px;
+      margin-top: 30px;
+    }
+
+    h3 {
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+
+    img.results_img {
+      width: 100%;
+    }
+
+    .copyright-hr {
+      margin-top: 100px;
+    }
+    .copyright {
+      float: right;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .embed-responsive video {
+      width: 50%;
+    }
+
+    </style>
+  </head>
+  <body>
+
+    <div class="container">
+
+      <div class="title">
+        <h1>IIT6028 HA#2&nbsp;<small>Computational Photography</small>&nbsp;<span class="badge">LATE DAY: 3</span></h1>
+      </div>
+
+      <div class="student-info">
+        <p>2018314405 Park Jun Hyuk</p>
+        <p><a href="http://mcml.yonsei.ac.kr/">MCML Group</a> @ <a href="http://www.yonsei.ac.kr/sc/index.jsp">Yonsei Univ.</a></p>
+        <p><a href="https://github.com/PJunhyuk">GitHub</a> / <a href="http://parkjunhyuk.com">Website</a></p>
+      </div>
+
+      <hr/>
+
+      <h1>Eulerian Video Magnification</h1>
+
+      <hr/>
+      <h3>1. INITIALS AND COLOR TRANSFORMATION<br/><small>load the video, extract its frames, convert to double-precision, and convert to YIQ from RGB</small></h3>
+
+      <p>Using <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">video_to_frame_list</a> function.</p>
+      <p>Load the video file using <code>VideoReader</code> function, extract its frame using <code>readFrame</code> function.</p>
+      <p>And convert each of the frames to the YIQ color space using <code>rgb2ntsc</code> function.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_1_original_vs_yiq.png" alt="img_1_original_vs_yiq">
+      <p><i>[1 2] 1: frame #1 original / 2: frame #1 converted to YIQ</i></p>
+      <br/>
+
+      <p><a href="https://en.wikipedia.org/wiki/YIQ">YIQ</a> in WIKIPEDIA</p>
+      <p>In YIQ color space, Y component represents the luma information, and is the only component used by black-and-white television recievers.</p>
+      <p>I and Q represent the chrominance information.</p>
+      <p>So I just focused on Y component in this project.</p>
+      <br/>
+      <p>Total required time: 180s</p>
+      <p>It takes quite a lot of time. Because we have to apply all processes in every frames.</p>
+      <p>So I saved <code>frame_list</code>, <code>Fs</code>, <code>height</code>, <code>width</code>, <code>ch</code>, and <code>frame_number</code> as <code>.mat</code> file and loaded it for test.</p>
+
+      <hr/>
+      <h3>2. LAPLACIAN PYRAMID<br/><small></small></h3>
+
+      <p>Using <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">get_laplacian_pyramid</a> function.</p>
+      <p><code>get_laplacian_pyramid</code> function gets <code>image_original</code>, and it apply gaussian filter on it, to generate <code>image_blurred</code>.</p>
+      <p>When applying gaussan filter, I set <code>gaussian_stdev</code> as 2.</p>
+      <p>Then calculate <code>image_residual</code> as <code>image_origianl - image_blurred</code>.</p>
+      <p>I made it as function to repeat this process easily.</p>
+      <p><i>I didn't used built-in function, likes <code>impyramid</code>.</i><p>
+      <br/>
+
+      <p>We can easily figure out <code>image_gaussian_N</code> is 2^N smaller then original image.</p>
+      <p>And <code>image_residual_N</code> is 2^N smaller then original image.</p>
+      <p>So each cycle, we generate <code>image_gaussian_N+1</code> and <code>image_residual_N</code> from <code>image_guassian_N</code>.</p>
+      <br/>
+
+      <p>In this project, I applied laplacian pyramid 4 times, so generated guassian_1, guassian_2, gaussian_3, gaussian_4, residual_0, residual_1, residual_2, residual_3.</p>
+      <p>You can check it by following image. All results are matched with size of original frame, using <code>imresize</code> function in matlab.</p>
+      <p><i>In that image, their are only 2 times of laplacian pyramid.</i></p>
+      <p><i><code>imresize</code> function uses bicubic interpolation to upsample it.</i></p>
+
+      <br/>
+      <img class="results_img" src="./img/img_2_laplacian_pyramid.png" alt="img_2_laplacian_pyramid">
+      <p><i>[1 4 / 2 5 / 3 -] 1: frame_original / 2: gaussian_1(*2) / 3: gaussain_2(*4) / 4: residual_0 / 5: residual_1(*2)</i></p>
+      <br/>
+
+      <p>And we can reconstruct original image from low level of gaussian & residual images using <code>laplacian_up</code> function.</p>
+      <p>In this function, We can reconstruct <code>image_reconstruct_N</code> from <code>image_gaussian_N+1</code> and <code>image_residual_N</code>.</p>
+      <p>Just generate <code>image_gaussian_up</code> from upsampling <code>image_gaussian_N+1</code> using <code>imresize</code> function.</p>
+      <p>And add <code>image_gaussian_up</code> and <code>image_residual_N</code> for generate <code>image_reconstruct</code>.</p>
+      <br/>
+
+      <!-- <img class="results_img" src="./img/img_2_recontruct.png" alt="img_2_recontruct">
+      <p><i>[1 2] 1: frame_original / 2: reconstructed image by image_residual_0, image_residual_1, image_gaussian_2</i></p>
+      <br/> -->
+
+      <p>We can check original image and reconstructed image by laplacian pyramid is almost same.</p>
+      <br/>
+
+      <p>In this project, we use temporal data, so we have to create <code>cube</code> using <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">get_cube</a> function.</p>
+      <p><code>cube</code> is array of gaussian/residual images by each frame.</p>
+      <p>I generate <code>cube</code> for gaussian & residual images by using <code>get_cube</code> function. It means temporal set of images.</p>
+      <p>I used <code>get_laplacian_pyramid</code> function for each frame of this video, and save them as array.</p>
+
+      <hr/>
+      <h3>3. TEMPORAL FILTERING<br/><small></small></h3>
+
+      <p>In this process, we find best filter for the <code>fft</code> of this cube.</p>
+      <p>To figure out frequncy elements of this signal, we make <code>cube_pixel</code>, which is made by temporal vector of cube on the exactly same position.</p>
+      <p>We calculate <code>fft</code> of that vector for each pixel, and calculate sum of them. We call it <code>cube_fft</code>.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_3_fft.png" alt="img_3_fft">
+      <p><i>sum of <code>cube_pixel</code>'s <code>fft</code>. It's also mean <code>cube_fft</code></i></p>
+      <br/>
+
+      <p>We can easily figure out which parts we have to increase. In this case, we have to increase that pick in near by 1Hz.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_3_filter.png" alt="img_3_filter">
+      <p><i>visualization of <code>butterworthBandpassFilter</code></i></p>
+      <br/>
+
+      <p>This is plot of given <code>butterworthBandpassFilter</code>. We know it's interest frequncy is 0.83Hz - 1Hz. It is similar with peak of <code>cube_fft</code>.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_3_fft_and_filter.png" alt="img_3_fft_and_filter">
+      <p><i><code>butterworthBandpassFilter</code> + <code>cube_fft</code> in one plot</i></p>
+      <br/>
+
+      <p>This image represents <code>butterworthBandpassFilter</code> and <code>cube_fft</code> in one time. We can easily figure out that peak is almost same.</p>
+      <p>So for <code>baby2.mp4</code>, this filter will be most suitable one.</p>
+
+      <hr/>
+      <h3>4. EXTRACTING THE FREQUENCY BAND OF INTEREST<br/><small></small></h3>
+
+      <p>We apply designed filter on each cubes which made by <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">get_cube</a> function.</p>
+      <p>I implemented <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">filter_cube</a> function for it.</p>
+      <p>In this function, we create <code>cube_pixel</code>. It is 1 dim array, and it is temporal data of values in the same position pixels.</p>
+      <p>I created <code>Hd_fft</code> using <code>freqz</code> function.</p>
+      <p>Then, I applied <code>fft</code> on <code>cube_pixel</code> to apply filter, generate <code>cube_pixel_fft</code>.</p>
+      <p>And multiply <code>Hd_fft</code> on it to apply that filter, and apply <code>ifft</code> to re-convert to original domain.</p>
+      <p>Also, we apply <code>abs</code> on the result of <code>ifft</code>.</p>
+      <p>All of this procedures are applied for only first channel of <code>cube</code>, and after it, we have to insert that 1 dim array to <code>cube</code>, and create <code>cube_filtered</code>.</p>
+      <p><i>I manage memory using <code>clear</code> function. I cleared <code>Hd</code>, which for filter, to manage memory.</i></p>
+
+      <hr/>
+      <h3>5. IMAGE RECONSTRUCTION<br/><small></small></h3>
+
+      <p>In this process, we reconstruct new sequence of video using filtered cubes.</p>
+      <p>We have to extract image from cube, for every frame. Then sum them with weighted value, alpha.</p>
+      <p>We can apply different values of alpha for every cube. But in this project, I set them same.</p>
+      <p>So we sum all gaussian & residual images with multiplication alpha, and then finally sum with original frame sequence, <code>frame_list</code>.</p>
+      <p>And also we used <code>imresize</code> function for this process.</p>
+      <p>Finally, we combine array of channel 1 - reconstructed one, and array of channel 2, 3 - same with origianl frame sequnce.</p>
+      <br/>
+
+      <p>And last we have to save that reconstructed frame sequence as video. We can use <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A2/A2.m">make_avi</a> function.</p>
+      <p>In that function, we use <code>VideoWriter</code> to convert sequnce to video, and apply <code>imadjust</code> and <code>stretchlim</code> function to apply suitable range for it.</p>
+      <p>At last, we convert each <code>cube_frame</code> color set to RGB from YIQ, so we have to use <code>ntsc2rgb</code> function.</p>
+      <br/>
+
+      <p>We can check result is quite good. We can much better on figure out baby's breating. You can check it on <code>baby2_0.83_1_100.avi</code>.</p>
+
+      <hr/>
+      <h3>face.mp4<br/><small></small></h3>
+      <p>And let's see about <code>face.mp4</code>.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_3_fft_face.png" alt="img_3_fft_face">
+      <p><i><code>cube_fft</code> of <code>face.mp4</code></i></p>
+      <br/>
+
+      <p>In this plot, we can see there are some peaks. First one is near by 0.5Hz, and second one is near by 1Hz.</p>
+      <p>So I designed a lot of <code>butterworthBandpassFilter</code> to focus on 0.5Hz between 1Hz to find best filter.</p>
+      <p>We can see little difference of face color, and motion.</p>
+      <p>I think <code>face_0.8_1_200.avi</code> is best.</p>
+
+      <hr/>
+      <h3>6. EXTRA CREDIT: CAPTURE AND MOTION-MAGNIFY YOUR OWN VIDEO(S)<br/><small></small></h3>
+      <p>And let's see about <code>hand.mp4</code>. I recorded my hand myself.</p>
+
+      <br/>
+      <img style="height: 300px; width: auto;" class="results_img" src="./img/img_0_hand.png" alt="img_0_hand">
+      <p><i>capture of <code>hand.mp4</code></i></p>
+      <br/>
+
+      <p>I took a video to amplify motion of my hand.</p>
+      <p>This is a random frame of <code>hand.mp4</code>. Let's check it's <code>fft</code> plot.</p>
+
+      <br/>
+      <img class="results_img" src="./img/img_3_fft_hand.png" alt="img_3_fft_hand">
+      <p><i><code>cube_fft</code> of <code>hand.mp4</code></i></p>
+      <br/>
+
+      <p>We can check peaks of <code>cube_fft</code>. So I tested many kinds of filters.</p>
+      <p>If you see result video, you will can check some problems. I think its because color system of cellular phone.</p>
+      <p>But it have not a bad effect on motion amplifying, so I didn't solved it.</p>
+
+
+      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
+
+      <hr class="copyright-hr"/>
+
+      <div class="copyright">
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A2/web">GitHub Repo</a></p>
+        <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
+      </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <!-- <script src="bootstrap.js"></script> -->
+  </body>
+</html>
