@@ -1,3 +1,8 @@
+clear;
+clc;
+
+tic
+
 % starter script for project 3
 DO_TOY = true;
 DO_BLEND = false;
@@ -5,15 +10,19 @@ DO_MIXED  = false;
 DO_COLOR2GRAY = false;
 
 if DO_TOY 
-    toyim = im2double(imread('./samples/toy_problem.png')); 
+    fprintf('DO_TOY START!\n');
+    toyim = im2double(imread('./data/toy_problem.png')); 
     % im_out should be approximately the same as toyim
     im_out = toy_reconstruct(toyim);
     disp(['Error: ' num2str(sqrt(sum(toyim(:)-im_out(:))))])
+    fprintf('DO_TOY END! ');
+    toc
 end
 
 if DO_BLEND
-    im_background = imresize(im2double(imread('./samples/im2.jpg')), 0.5, 'bilinear');
-    im_object = imresize(im2double(imread('./samples/penguin-chick.jpeg')), 0.5, 'bilinear');
+    fprintf('DO_BLEND START!\n');
+    im_background = imresize(im2double(imread('./data/hiking.jpg')), 0.5, 'bilinear');
+    im_object = imresize(im2double(imread('./data/penguin-chick.jpeg')), 0.5, 'bilinear');
 
     % get source region mask from the user
     objmask = getMask(im_object);
@@ -23,6 +32,8 @@ if DO_BLEND
     % blend
     im_blend = poissonBlend(im_s, mask_s, im_background);
     figure(3), hold off, imshow(im_blend)
+    fprintf('DO_BLEND END! ');
+    toc
 end
 
 if DO_MIXED
@@ -35,7 +46,7 @@ if DO_MIXED
 end
 
 if DO_COLOR2GRAY
-    im_rgb = im2double(imread('./samples/colorBlindTest35.png'));
+    im_rgb = im2double(imread('./data/colorBlindTest35.png'));
     im_gr = color2gray(im_rgb);
     figure(4), hold off, imagesc(im_gr), axis image, colormap gray
 end
