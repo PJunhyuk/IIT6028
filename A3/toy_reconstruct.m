@@ -4,7 +4,7 @@ function im_out = toy_reconstruct(toyim)
 
 % fprintf('DO_TOY START!\n');
 
-[imh, imw, ~] = size(toyim);
+[imh, imw, nn] = size(toyim);
 toyim = im2double(toyim);
 
 %%%% maps each pixel to a variable number
@@ -13,7 +13,7 @@ im2var(1:imh*imw) = 1: imh*imw;
 
 %%%% Initialize
 A = sparse(imh*(imw-1) + imw*(imh-1) + 1, imh*imw);
-b = zeros(imh*imw, 1);
+b = zeros(imh*imw, nn);
 e = 0;
 
 %%%% Equation(2)
@@ -48,7 +48,7 @@ b(e) = toyim(1,1);
 %%%% reconstruct image
 v = A \ b;
 im_out = reshape(v, [imh, imw]);
-% imwrite(im_out, 'data/toy_problem_reconstructed.png');
+% imwrite(im_out, 'results/toy_problem_reconstructed.png');
 % fprintf('DO_TOY END ');
 % toc
 
