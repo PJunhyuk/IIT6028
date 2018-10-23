@@ -6,8 +6,9 @@ tic
 % starter script for project 3
 DO_TOY = false;
 DO_BLEND = false;
-DO_MIXED  = true;
+DO_MIXED  = false;
 DO_COLOR2GRAY = false;
+DO_BLEND_MIXED = true;
 
 if DO_TOY
     fprintf('DO_TOY START!\n');
@@ -52,6 +53,30 @@ if DO_MIXED
     fprintf('mixedBlend end '); toc
     figure(3), hold off, imshow(im_blend);
     fprintf('DO_MIXED END! '); toc
+end
+
+if DO_BLEND_MIXED
+    fprintf('DO_BLEND_MIXED START!\n');
+    im_background = imresize(im2double(imread('./data/background_1.jpg')), 0.5, 'bilinear');
+    im_object = imresize(im2double(imread('./data/target_1.jpg')), 0.5, 'bilinear');
+
+    % get source region mask from the user
+    objmask = getMask(im_object);
+    % align im_s and mask_s with im_background
+    [im_s, mask_s] = alignSource(im_object, objmask, im_background);
+
+    % blend
+    fprintf('poissionBlend start '); toc
+    im_blend = poissonBlend(im_s, mask_s, im_background);
+    fprintf('poissionBlend end '); toc
+    figure(3), hold off, imshow(im_blend)
+
+    % mixed
+    fprintf('mixedBlend start '); toc
+    im_blend = mixedBlend(im_s, mask_s, im_background);
+    fprintf('mixedBlend end '); toc
+    figure(4), hold off, imshow(im_blend);
+    fprintf('DO_BLEND_MIXED END! '); toc
 end
 
 if DO_COLOR2GRAY

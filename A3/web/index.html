@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HA#3_IIT6028</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.css">
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script>
+    </script>
+
+    <style>
+    @import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .container {
+      padding-bottom: 20px;
+    }
+
+    .title {
+      margin-top: 30px;
+    }
+    .student-info {
+      float: right;
+      text-align: right;
+    }
+
+    hr {
+      width: 100%;
+    }
+
+    #main-carousel {
+      width: 1000px;
+      left: 50%;
+      margin-left: -500px;
+      margin-top: 30px;
+    }
+
+    h3 {
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+
+    img {
+      margin-bottom: 5px;
+    }
+    img.results_img {
+      width: 100%;
+    }
+    img.results_img_left_20 {
+      width: 15%;
+    }
+    img.results_img_right_20 {
+      width: 15%;
+      margin-left: 50px;
+    }
+
+    .copyright-hr {
+      margin-top: 100px;
+    }
+    .copyright {
+      float: right;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .embed-responsive video {
+      width: 50%;
+    }
+
+    </style>
+  </head>
+  <body onload="highlightMATLABCode({tagCode: false, tagPre: true, className: 'matlab-code'});">
+
+    <div class="container">
+
+      <div class="title">
+        <h1>IIT6028 HA#3&nbsp;<small>Computational Photography</small></h1>
+      </div>
+
+      <div class="student-info">
+        <p>2018314405 Park Jun Hyuk</p>
+        <p><a href="http://mcml.yonsei.ac.kr/">MCML Group</a> @ <a href="http://www.yonsei.ac.kr/sc/index.jsp">Yonsei Univ.</a></p>
+        <p><a href="https://github.com/PJunhyuk">GitHub</a> / <a href="http://parkjunhyuk.com">Website</a></p>
+      </div>
+
+      <hr/>
+
+      <h1>Implement poisson blending</h1>
+
+      <hr/>
+      <h3>1. TOY PROBLEM<br/><small>compute the x and y gradient of an image, and reconstruct it.</small></h3>
+
+      <p>Using <code>DO_TOY</code> parts in <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/starter.m">starter</a> function.</p>
+      <p>I refer to the given "Hints and Information".</p>
+      <p>So I use <code>im2var</code> variable to performed the mapping between pixel and variable number.</p>
+      <p>And to save memory, I use <code>sparse</code> to initialize preallocate large variables, <code>A</code>.</p>
+
+      <pre class="matlab-code">
+%%%% maps each pixel to a variable number
+im2var = zeros(imh, imw);
+im2var(1:imh*imw) = 1: imh*imw;
+
+%%%% Initialize
+A = sparse(imh*(imw-1) + imw*(imh-1) + 1, imh*imw);
+b = zeros(imh*imw, nn);
+e = 0;
+</pre>
+
+      <p>I </p>
+
+      <pre class="matlab-code">
+%%%% Equation(2)
+for y = 1:imh
+    for x = 1:imw-1
+        e = e+1;
+        A(e, im2var(y,x+1)) = 1;
+        A(e, im2var(y,x)) = -1;
+        b(e) = toyim(y,x+1) - toyim(y,x);
+    end
+end
+</pre>
+
+      <br/>
+      <img class="results_img_left_20" src="./img/img_1_original.png" alt="img_1_original">
+      <img class="results_img_right_20" src="./img/img_1_reconstructed.png" alt="img_1_reconstructed">
+      <p><i>[1 2] 1: original image / 2: reconstructed image</i></p>
+      <br/>
+
+      <p><a href="https://en.wikipedia.org/wiki/YIQ">YIQ</a> in WIKIPEDIA</p>
+      <p>In YIQ color space, Y component represents the luma information, and is the only component used by black-and-white television recievers.</p>
+      <p>I and Q represent the chrominance information.</p>
+      <p>So I just focused on Y component in this project.</p>
+      <br/>
+      <p>Total required time: 180s</p>
+      <p>It takes quite a lot of time. Because we have to apply all processes in every frames.</p>
+      <p>So I saved <code>frame_list</code>, <code>Fs</code>, <code>height</code>, <code>width</code>, <code>ch</code>, and <code>frame_number</code> as <code>.mat</code> file and loaded it for test.</p>
+
+      <hr/>
+      <h3>2. LAPLACIAN PYRAMID<br/><small></small></h3>
+
+
+      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
+
+      <hr class="copyright-hr"/>
+
+      <div class="copyright">
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A2/web">GitHub Repo</a></p>
+        <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
+      </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.min.js"></script>
+  </body>
+</html>
