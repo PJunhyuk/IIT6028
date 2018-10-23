@@ -27,10 +27,10 @@ for y = 1:imh
             A(e, im2var(y,x+1)) = -1;
             A(e, im2var(y-1,x)) = -1;
             A(e, im2var(y+1,x)) = -1;
-            b(e, :) = 4*im_s(y,x,:) - im_s(y,x+1,:) - im_s(y,x-1,:) - im_s(y-1,x,:) - im_s(y+1,x,:);
+            b(e,:) = 4*im_s(y,x,:) - im_s(y,x+1,:) - im_s(y,x-1,:) - im_s(y-1,x,:) - im_s(y+1,x,:);
         else
             A(e, im2var(y,x)) = 1;
-            b(e, :) = im_background(y,x,:);
+            b(e,:) = im_background(y,x,:);
         end
     end
     

@@ -20,8 +20,8 @@ end
 
 if DO_BLEND
     fprintf('DO_BLEND START!\n');
-    im_background = imresize(im2double(imread('./data/hiking.jpg')), 0.25, 'bilinear');
-    im_object = imresize(im2double(imread('./data/penguin-chick.jpeg')), 0.25, 'bilinear');
+    im_background = imresize(im2double(imread('./data/hiking.jpg')), 0.5, 'bilinear');
+    im_object = imresize(im2double(imread('./data/penguin-chick.jpeg')), 0.5, 'bilinear');
 
     % get source region mask from the user
     objmask = getMask(im_object);
@@ -38,8 +38,8 @@ end
 
 if DO_MIXED
     fprintf('DO_MIXED START!\n');
-    im_background = imresize(im2double(imread('./data/hiking.jpg')), 0.25, 'bilinear');
-    im_object = imresize(im2double(imread('./data/penguin-chick.jpeg')), 0.25, 'bilinear');
+    im_background = imresize(im2double(imread('./data/hiking.jpg')), 0.5, 'bilinear');
+    im_object = imresize(im2double(imread('./data/penguin-chick.jpeg')), 0.5, 'bilinear');
 
     % get source region mask from the user
     objmask = getMask(im_object);
@@ -48,9 +48,10 @@ if DO_MIXED
     
     % blend
     fprintf('mixedBlend start '); toc
-    im_blend = mixedBlend(im_s, mask_s, im_bg);
+    im_blend = mixedBlend(im_s, mask_s, im_background);
     fprintf('mixedBlend end '); toc
     figure(3), hold off, imshow(im_blend);
+    fprintf('DO_MIXED END! '); toc
 end
 
 if DO_COLOR2GRAY

@@ -27,7 +27,11 @@ for y = 1:imh
             A(e, im2var(y,x+1)) = -1;
             A(e, im2var(y-1,x)) = -1;
             A(e, im2var(y+1,x)) = -1;
-            b(e, :) = 4*im_s(y,x,:) - im_s(y,x+1,:) - im_s(y,x-1,:) - im_s(y-1,x,:) - im_s(y+1,x,:);
+            
+            b = applyGradient(im_s, im_background, b, x, y, e, 0, 1);
+            b = applyGradient(im_s, im_background, b, x, y, e, 0, -1);
+            b = applyGradient(im_s, im_background, b, x, y, e, 1, 0);
+            b = applyGradient(im_s, im_background, b, x, y, e, -1, 0);
         else
             A(e, im2var(y,x)) = 1;
             b(e, :) = im_background(y,x,:);
@@ -44,5 +48,26 @@ end
 %%%% reconstruct image
 v = A \ b;
 im_blend = reshape(v, [imh, imw, nn]);
+im_blend(:,:,:) = max(0, im_blend(:,:,:));
+im_blend(:,:,:) = min(1, im_blend(:,:,:));
+
+end
+
+function b = applyGradient(im_s, im_background, b, x, y, e, x_, y_)
+
+[~, ~, nn] = size(im_s);
+
+grad_s = zeros(1, nn);
+grad_t = zeros(1, nn);
+
+for c = 1:nn
+    grad_s(1,c) = im_s(y,x,c) - im_s(y+y_,x+x_,c);
+    grad_t(1,c) = im_background(y,x,c) - im_background(y+y_,x+x_,c);
+end
+if abs(grad_s(1,:)) >= abs(grad_t(1,:))
+    b(e, :) = b(e, :) + grad_s(1, :);
+else
+    b(e, :) = b(e, :) + grad_t(1, :);
+end
 
 end
