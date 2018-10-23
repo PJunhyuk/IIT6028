@@ -7,8 +7,8 @@ tic
 DO_TOY = false;
 DO_BLEND = false;
 DO_MIXED  = false;
-DO_COLOR2GRAY = false;
 DO_BLEND_MIXED = true;
+DO_COLOR2GRAY = false;
 
 if DO_TOY
     fprintf('DO_TOY START!\n');
@@ -57,8 +57,8 @@ end
 
 if DO_BLEND_MIXED
     fprintf('DO_BLEND_MIXED START!\n');
-    im_background = imresize(im2double(imread('./data/background_1.jpg')), 0.5, 'bilinear');
-    im_object = imresize(im2double(imread('./data/target_1.jpg')), 0.5, 'bilinear');
+    im_background = imresize(im2double(imread('./data/background_5.jpg')), 0.12, 'bilinear');
+    im_object = imresize(im2double(imread('./data/target_6.jpg')), 1.00, 'bilinear');
 
     % get source region mask from the user
     objmask = getMask(im_object);
