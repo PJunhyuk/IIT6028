@@ -35,3 +35,14 @@ https://pjunhyuk.github.io/IIT6028/
 4. Extracting the frequency band of interest
 5. Image reconstruction
 6. (+ Capture and motion-magnify your own video(s))
+
+## [HA#3](https://pjunhyuk.github.io/IIT6028/A3/web/)
+#### Implement poisson blending
+
+<img src="./src/A3/A3_1.png" alt="A3_1" width="400" />
+<img src="./src/A3/A3_2.jpg" alt="A3_2" width="400" />
+
+1. Toy problem
+2. Poisson blending
+3. Blending with mixed gradients
+4. Your own examples
