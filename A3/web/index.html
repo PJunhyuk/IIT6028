@@ -263,9 +263,9 @@ end
       <p>In following images, we can check gradient mixed image, which is result of this process.</p>
       <p>Aligned image is same with upper image, so we can compare blended image and gradient mixed image.</p>
 
-<img class="results_img_left" src="./img/img_2_align.jpg" alt="img_2_align">
-<img class="results_img_right" src="./img/img_3_mixed.jpg" alt="img_3_mixed">
-<p><i>[1 2] 1: aligned image / 2: gradient mixed image</i></p>
+      <img class="results_img_left" src="./img/img_2_align.jpg" alt="img_2_align">
+      <img class="results_img_right" src="./img/img_3_mixed.jpg" alt="img_3_mixed">
+      <p><i>[1 2] 1: aligned image / 2: gradient mixed image</i></p>
 
       <p>We can check gradient mixed image seems more transparent than blended image, because we mixed its gradient.</p>
 
@@ -273,13 +273,69 @@ end
       <hr/>
       <h3>4. YOUR OWN EXAMPLES<br/><small></small></h3>
 
+      <h4>(1) mixed-better case</h4>
+
+      <img class="results_img_left" src="./img/img_4_1_target.png" alt="img_4_1_target" style="width: 20%; margin-left: 20%; margin-top: 30px; margin-bottom: 70px;">
+      <img class="results_img_right" src="./img/img_4_1_align.jpg" alt="img_4_1_align">
       <br/>
-      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
+      <img class="results_img_left" src="./img/img_4_1_blend.jpg" alt="img_4_1_blend">
+      <img class="results_img_right" src="./img/img_4_1_mixed.jpg" alt="img_4_1_mixed">
+      <p><i>[1 2 / 3 4] 1: target image / 2: aligned image / 3: blended image / 4: mixed image</i></p>
+      <br/>
+
+      <p>If target image is text, we have to remove background of it, so gradient mixed image is better than just blended image.</p>
+      <p>We can check border of mixed image is more natural than blended image.</p>
+      <br/>
+
+      <h4>(2) blend-better case</h4>
+
+      <img class="results_img_left" src="./img/img_4_2_target.jpeg" alt="img_4_2_target" style="width: 20%; margin-left: 20%; margin-top: 100px; margin-bottom: 60px;">
+      <img class="results_img_right" src="./img/img_4_2_align.jpg" alt="img_4_2_align">
+      <br/>
+      <img class="results_img_left" src="./img/img_4_2_blend.jpg" alt="img_4_2_blend">
+      <img class="results_img_right" src="./img/img_4_2_mixed.jpg" alt="img_4_2_mixed">
+      <p><i>[1 2 / 3 4] 1: target image / 2: aligned image / 3: blended image / 4: mixed image</i></p>
+      <br/>
+
+      <p>If target image is object, gradient mixed image looks transparent. So for many case, blended image is much better than mixed image.</p>
+      <p>As given results, target image - chick - looks much transparent in mixed image, and it looks not natural.</p>
+      <br/>
+
+      <h4>(3) bad case</h4>
+
+      <img class="results_img_left" src="./img/img_4_3_target.jpg" alt="img_4_3_target" style="width: 20%; margin-left: 20%; margin-top: 100px; margin-bottom: 40px;">
+      <img class="results_img_right" src="./img/img_4_3_align.jpg" alt="img_4_3_align">
+      <br/>
+      <img class="results_img_left" src="./img/img_4_3_blend.jpg" alt="img_4_3_blend">
+      <img class="results_img_right" src="./img/img_4_3_mixed.jpg" alt="img_4_3_mixed">
+      <p><i>[1 2 / 3 4] 1: target image / 2: aligned image / 3: blended image / 4: mixed image</i></p>
+      <br/>
+
+      <p>If mask of target image has fickle background, this method cannot erase it perfectly.</p>
+      <p>So both blended image and mixed image looks not natural.</p>
+      <br/>
+
+      <h4>(4) bonus case</h4>
+
+      <img class="results_img_left" src="./img/img_4_4_target.jpg" alt="img_4_4_target" style="width: 40%; margin-top: 100px; margin-bottom: 40px;">
+      <img class="results_img_right" src="./img/img_4_4_align.jpg" alt="img_4_4_align">
+      <br/>
+      <img class="results_img_left" src="./img/img_4_4_blend.jpg" alt="img_4_4_blend">
+      <img class="results_img_right" src="./img/img_4_4_mixed.jpg" alt="img_4_4_mixed">
+      <p><i>[1 2 / 3 4] 1: target image / 2: aligned image / 3: blended image / 4: mixed image</i></p>
+      <br/>
+
+      <p>Gradient mixed method successfully erase background texture of text image.</p>
+      <p>So we can figure out results of mixed image is very natural.</p>
+      <br/>
+
+      <hr/>
+      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A3/web">GitHub Repo</a>.</i></p>
 
       <hr class="copyright-hr"/>
 
       <div class="copyright">
-        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A2/web">GitHub Repo</a></p>
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A3/web">GitHub Repo</a></p>
         <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
       </div>
 
