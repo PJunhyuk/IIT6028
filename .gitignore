@@ -6,4 +6,5 @@ A1/src
 *.mat
 *.zip
 
+!A2/data
 A3/results
