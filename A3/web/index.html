@@ -55,12 +55,20 @@
     img.results_img {
       width: 100%;
     }
-    img.results_img_left_20 {
+    img.results_img_left_15 {
       width: 15%;
     }
-    img.results_img_right_20 {
+    img.results_img_right_15 {
       width: 15%;
-      margin-left: 50px;
+      margin-left: 5%;
+    }
+
+    img.results_img_left {
+      width: 50%;
+    }
+    img.results_img_right {
+      width: 50%;
+      float: right;
     }
 
     .copyright-hr {
@@ -97,7 +105,7 @@
       <h1>Implement poisson blending</h1>
 
       <hr/>
-      <h3>1. TOY PROBLEM<br/><small>compute the x and y gradient of an image, and reconstruct it.</small></h3>
+      <h3>1. TOY PROBLEM<br/><small>Compute the x and y gradient of an image, and reconstruct it.</small></h3>
 
       <p>Using <code>DO_TOY</code> parts in <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/starter.m">starter</a> function.</p>
       <p>I refer to the given "Hints and Information".</p>
@@ -115,9 +123,9 @@ b = zeros(imh*imw, nn);
 e = 0;
 </pre>
 
-      <p>I </p>
-
-      <pre class="matlab-code">
+      <p>Then I calculate the difference between the gradients of v and the gradients of s.</p>
+      <p>In <code>Equation(2)</code>, we calculate the difference between the x-gradients of v and the x-gradients of s.</p>
+<pre class="matlab-code">
 %%%% Equation(2)
 for y = 1:imh
     for x = 1:imw-1
@@ -129,25 +137,143 @@ for y = 1:imh
 end
 </pre>
 
-      <br/>
-      <img class="results_img_left_20" src="./img/img_1_original.png" alt="img_1_original">
-      <img class="results_img_right_20" src="./img/img_1_reconstructed.png" alt="img_1_reconstructed">
-      <p><i>[1 2] 1: original image / 2: reconstructed image</i></p>
-      <br/>
+      <p>In <code>Equation(3)</code>, we calculate the difference between the y-gradients of v and the y-gradients of s.</p>
+<pre class="matlab-code">
+%%%% Equation(3)
+for x = 1:imw
+    for y = 1:imh-1
+        e = e+1;
+        A(e, im2var(y+1,x)) = 1;
+        A(e, im2var(y,x)) = -1;
+        b(e) = toyim(y+1,x) - toyim(y,x);
+    end
+end
+</pre>
 
-      <p><a href="https://en.wikipedia.org/wiki/YIQ">YIQ</a> in WIKIPEDIA</p>
-      <p>In YIQ color space, Y component represents the luma information, and is the only component used by black-and-white television recievers.</p>
-      <p>I and Q represent the chrominance information.</p>
-      <p>So I just focused on Y component in this project.</p>
+      <p>And we minimize the difference between the colors of the top left corners of the two images in <code>Equation(4)</code>.</p>
+      <p>Then reconstruct it using <code>\</code> function in matlab, and make that vector to image using <code>reshape</code> function.</p>
+<pre class="matlab-code">
+%%%% Equation(4)
+e = e+1;
+A(e, im2var(1,1)) = 1;
+b(e) = toyim(1,1);
+
+%%%% reconstruct image
+v = A \ b;
+im_out = reshape(v, [imh, imw]);
+</pre>
+
       <br/>
-      <p>Total required time: 180s</p>
-      <p>It takes quite a lot of time. Because we have to apply all processes in every frames.</p>
-      <p>So I saved <code>frame_list</code>, <code>Fs</code>, <code>height</code>, <code>width</code>, <code>ch</code>, and <code>frame_number</code> as <code>.mat</code> file and loaded it for test.</p>
+      <p>Following images are results TOY PROBLEM.</p>
+      <p>We can see reconstructed image match the original one, so this process works correctly.</p>
+
+      <img class="results_img_left_15" src="./img/img_1_original.png" alt="img_1_original">
+      <img class="results_img_right_15" src="./img/img_1_reconstructed.png" alt="img_1_reconstructed">
+      <p><i>[1 2] 1: original image / 2: reconstructed image</i></p>
+
+      <p>Error calculated by <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/starter.m">starter</a> function is <code>0+2.8851e-06i</code>, so we can check they are almost same.</p>
+
 
       <hr/>
-      <h3>2. LAPLACIAN PYRAMID<br/><small></small></h3>
+      <h3>2. POISSON BLENDING<br/><small>Formulate and solve the blending constraints.</small></h3>
+
+      <p>First, I used <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/src/getMask.m">getMask</a>, <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/src/mask2chain.m">mask2chain</a>, and <a href="https://github.com/PJunhyuk/IIT6028/blob/master/A3/src/alignSource.m">alignSource</a> functions in given <code>./src</code> folder, to Select the boundaries of a region in the source image and specify a location in the target image where it should be blended.</p>
+      <p>After that, we should formulate and solve the blending constraints expressed in Equation (1).</p>
+      <p>I used <code>laplacian filter</code> to implement it.</p>
+
+<pre class="matlab-code">
+%%%% Laplace filter
+for y = 1:imh
+    for x = 1:imw
+        e = e+1;
+        if mask_s(y,x) == 1
+            A(e, im2var(y,x)) = 4;
+            A(e, im2var(y,x-1)) = -1;
+            A(e, im2var(y,x+1)) = -1;
+            A(e, im2var(y-1,x)) = -1;
+            A(e, im2var(y+1,x)) = -1;
+            b(e,:) = 4*im_s(y,x,:) - im_s(y,x+1,:) - im_s(y,x-1,:) - im_s(y-1,x,:) - im_s(y+1,x,:);
+        else
+            A(e, im2var(y,x)) = 1;
+            b(e,:) = im_background(y,x,:);
+        end
+    end
+end
+</pre>
+
+      <p>After this process, I applied image reconstructing process which implemented in TOY PROBLEM.</p>
+      <p>In following image, we can compare simple aligned image and blended image by poisson blending.</p>
+
+      <img class="results_img_left" src="./img/img_2_align.jpg" alt="img_2_align">
+      <img class="results_img_right" src="./img/img_2_blend.jpg" alt="img_2_blend">
+      <p><i>[1 2] 1: aligned image / 2: blended image</i></p>
+
+      <p>We can simply check difference between two images. Last one is much better than first one.</p>
 
 
+      <hr/>
+      <h3>3. BLENDING WITH MIXED GRADIENTS<br/><small>Use the gradient in source or target with the larger magnitude as the guide, rather than the source gradient.</small></h3>
+
+      <p>In this step, We have to use the gradient in source or target with the larger magnitude as the guide, rather than the source gradient.</p>
+      <p>We have to calculate gradient for 4 ways(up, down, left, right), so I implemented <code>applyGradient</code> function to simplify it.</p>
+
+<pre class="matlab-code">
+function b = applyGradient(im_s, im_background, b, x, y, e, x_, y_)
+    [~, ~, nn] = size(im_s);
+    grad_s = zeros(1, nn);
+    grad_t = zeros(1, nn);
+    for c = 1:nn
+        grad_s(1,c) = im_s(y,x,c) - im_s(y+y_,x+x_,c);
+        grad_t(1,c) = im_background(y,x,c) - im_background(y+y_,x+x_,c);
+    end
+    if abs(grad_s(1,:)) >= abs(grad_t(1,:))
+        b(e, :) = b(e, :) + grad_s(1, :);
+    else
+        b(e, :) = b(e, :) + grad_t(1, :);
+    end
+end
+</pre>
+
+      <p>In this function, we calculate <code>grad_s</code> and <code>grad_t</code> for every color channels, and compare their absolute value, and use bigger one.</p>
+      <p>And then I applied <code>applyGradient</code> to every 4 ways.</p>
+
+<pre class="matlab-code">
+%%%% Laplace filter
+for y = 1:imh
+    for x = 1:imw
+        e = e+1;
+        if mask_s(y,x) == 1
+            A(e, im2var(y,x)) = 4;
+            A(e, im2var(y,x-1)) = -1;
+            A(e, im2var(y,x+1)) = -1;
+            A(e, im2var(y-1,x)) = -1;
+            A(e, im2var(y+1,x)) = -1;
+            b = applyGradient(im_s, im_background, b, x, y, e, 0, 1);
+            b = applyGradient(im_s, im_background, b, x, y, e, 0, -1);
+            b = applyGradient(im_s, im_background, b, x, y, e, 1, 0);
+            b = applyGradient(im_s, im_background, b, x, y, e, -1, 0);
+        else
+            A(e, im2var(y,x)) = 1;
+            b(e, :) = im_background(y,x,:);
+        end
+    end
+end
+</pre>
+
+      <p>In following images, we can check gradient mixed image, which is result of this process.</p>
+      <p>Aligned image is same with upper image, so we can compare blended image and gradient mixed image.</p>
+
+<img class="results_img_left" src="./img/img_2_align.jpg" alt="img_2_align">
+<img class="results_img_right" src="./img/img_3_mixed.jpg" alt="img_3_mixed">
+<p><i>[1 2] 1: aligned image / 2: gradient mixed image</i></p>
+
+      <p>We can check gradient mixed image seems more transparent than blended image, because we mixed its gradient.</p>
+
+
+      <hr/>
+      <h3>4. YOUR OWN EXAMPLES<br/><small></small></h3>
+
+      <br/>
       <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A1/web">GitHub Repo</a>.</i></p>
 
       <hr class="copyright-hr"/>
