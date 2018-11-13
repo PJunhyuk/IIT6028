@@ -1,4 +1,3 @@
-A1/src
 *.pdf
 *.avi
 *.asv
@@ -6,5 +5,7 @@ A1/src
 *.mat
 *.zip
 
+A1/results
 !A2/data
 A3/results
+A4/exposure_stack
