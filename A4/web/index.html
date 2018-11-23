@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HA#4_IIT6028</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.css">
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script>
+    </script>
+
+    <style>
+    @import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .container {
+      padding-bottom: 20px;
+    }
+
+    .title {
+      margin-top: 30px;
+    }
+    .student-info {
+      float: right;
+      text-align: right;
+    }
+
+    hr {
+      width: 100%;
+    }
+
+    #main-carousel {
+      width: 1000px;
+      left: 50%;
+      margin-left: -500px;
+      margin-top: 30px;
+    }
+
+    h3 {
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+
+    img {
+      margin-bottom: 5px;
+    }
+    img.results_img {
+      width: 100%;
+    }
+    img.results_img_left_15 {
+      width: 15%;
+    }
+    img.results_img_right_15 {
+      width: 15%;
+      margin-left: 5%;
+    }
+
+    img.results_img_left {
+      width: 50%;
+    }
+    img.results_img_right {
+      width: 50%;
+      float: right;
+    }
+
+    .copyright-hr {
+      margin-top: 100px;
+    }
+    .copyright {
+      float: right;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .embed-responsive video {
+      width: 50%;
+    }
+
+    </style>
+  </head>
+  <body onload="highlightMATLABCode({tagCode: false, tagPre: true, className: 'matlab-code'});">
+
+    <div class="container">
+
+      <div class="title">
+        <h1>IIT6028 HA#4&nbsp;<small>Computational Photography</small>&nbsp;<span class="badge">LATE DAY: 3</span></h1>
+      </div>
+
+      <div class="student-info">
+        <p>2018314405 Park Jun Hyuk</p>
+        <p><a href="http://mcml.yonsei.ac.kr/">MCML Group</a> @ <a href="http://www.yonsei.ac.kr/sc/index.jsp">Yonsei Univ.</a></p>
+        <p><a href="https://github.com/PJunhyuk">GitHub</a> / <a href="http://parkjunhyuk.com">Website</a></p>
+      </div>
+
+
+      <hr/>
+
+
+      <h1>HDR IMAGING & TONEMAPPING</h1>
+
+      <hr/>
+      <h3>1. HDR IMAGING<br/><small>Convert the RAW .NEF images into linear 16-bit .TIFF images</small></h3>
+
+      <p>I used <a href="http://www.cybercom.net/~dcoffin/dcraw/">dcraw</a> tool to convert the RAW .NEF images into linear 16-bit .TIFF images.</p>
+
+      <p>First, install <code>dcraw</code> in macOS using <code>homebrew</code>.</p>
+
+<pre>
+$ brew install dcraw
+</pre>
+
+      <p>Then, I used following flags to apply given conditions.</p>
+
+<pre>
+<b>condition #1</b>: Do white balancing using the camera's profile for white balancing.
+<code>-w</code>: Use the white balance specified by the camera. If this is not found, print a warning and use another method.
+
+<b>condition #2</b>: Do demosaicing using high-quality interpolation.
+<code>-q 3</code>: Use <a href="https://en.wikipedia.org/wiki/Demosaicing">Adaptive Homogeneity-Directed (AHD)</a> interpolation.
+<i>Adaptive Homogeneity-Directed (AHD) somewhat the industry standard.
+Interpolation selects the direction of interpolation so as to maximize a homogeneity metric, thus typically minimizing color artifacts.
+It has been implemented in recent versions of dcraw.</i>
+
+<b>condition #3</b>: Use sRGB as the output color space.
+<code>-o 1</code>: Select the output colorspace when the <code>-p</code> option is not used: / 1 sRGB D65 (default)
+
+<b>condition #4</b>: linear 16-bit .TIFF images.
+<code>-T</code>: Write TIFF with metadata instead of PGM/PPM/PAM.
+<code>-4</code>: Linear 16-bit, same as <code>-6 -W -g 1 1.</code>.
+</pre>
+
+      <p>So this is final codes:</p>
+
+<pre>
+$ dcraw -w -q 3 -o 1 -T -4 exposure*.nef
+</pre>
+
+      <p>It tooks 4 minutes in my macbook pro, and we can get .TIFF files.</p>
+
+
+      <hr/>
+
+
+      <h3>1-1. LINEARIZE RENDERED IMAGES<br/><small>To perform radiometric calibration in order to undo non-linearity.</small></h3>
+
+      <p>We cannot use every pixels for calculating recover function f, because it takes too long time and a lot of memory.</p>
+      <p>So we have to choose several points to calculate recover function f.</p>
+      <p>First, I choosed it randomly, but it is not good way to apply every features of image.</p>
+      <p>So I resized image into smaller one(1/60), and use every pixels of it.</p>
+      <p>If I use .TIFF image, its range is 0-65535, so we have to devide it with 256.</p>
+      <p>For .JPG image, its range is 0-255, so we don't have to devide it.</p>
+      <br/>
+
+      <p>I used <code>gsolve</code> function, which is implemented in reference paper.</p>
+      <p>This is full <code>gsolve</code> code.</p>
+      <p>I initialized <code>A</code> with <code>sparse</code> function, to solve memory issue.</p>
+
+<pre class="matlab-code">
+function [g, lE] = gsolve(Z,B,l,w)
+
+n = 256;
+A = sparse(size(Z,1)*size(Z,2)+n+1, n+size(Z,1));
+b = zeros(size(A,1),1);
+
+%% Include the data?fitting equations
+k = 1;
+for i=1:size(Z,1)
+    for j=1:size(Z,2)
+        wij = w(Z(i,j)+1);
+        A(k,Z(i,j)+1) = wij;
+        A(k,n+i) = -wij;
+        b(k,1) = wij * B(j);
+        k = k+1;
+    end
+end
+
+%% Fix the curve by setting its middle value to 0
+A(k,129) = 1;
+k = k+1;
+
+%% Include the smoothness equations
+for i=1:n-2
+    A(k,i)=l*w(i+1);
+    A(k,i+1) = -2*l*w(i+1);
+    A(k,i+2) = l*w(i+1);
+    k=k+1;
+end
+
+%% Solve the system using SVD
+x = A\b;
+g = x(1:n);
+lE = x(n+1:size(x,1));
+</pre>
+
+      <p>So we have to initialize <code>Z</code>, <code>B</code>, <code>l</code>, and <code>w</code>.<p>
+
+<pre class="matlab-code">
+Z_r = zeros(height*width, k);
+for i = 1: height
+    for j = 1: width
+        Z_r((i-1)*width + j, :) = img_list(i, j, 1, :);
+    end
+end
+</pre>
+
+<pre class="matlab-code">
+B = zeros(k, 1);
+for i = 1: k
+    B(i) = power(2, i-1) / 2048;
+end
+</pre>
+
+<pre class="matlab-code">
+w = zeros(n,1);
+%%%% weighting schemes - tent
+for z = 1: n/2
+    w(z) = z-Zmin-1;
+end
+for z = n/2+1: n
+    w(z) = Zmax+1-z;
+end
+%%%% weighting schemes - uniform
+% for z = 1: n
+%     w(z) = n/2;
+% end
+</pre>
+
+      <p>And then, we can get several plots by <code>l</code> value.</p>
+
+      <img class="results_img_left_50" src="./img/z_jpg_60_20.png" alt="z_jpg_60_20">
+      <img class="results_img_left_50" src="./img/z_jpg_60_50.png" alt="z_jpg_60_50">
+      <img class="results_img_left_50" src="./img/z_jpg_60_100.png" alt="z_jpg_60_100">
+      <img class="results_img_left_50" src="./img/z_jpg_60_1000.png" alt="z_jpg_60_1000">
+
+      <p><i>(above) [1 2 / 3 4] all: weighting scheme - tent & .jpg / 1: l=20 / 2: l=50 / 3: l=100 / 4: l=1000</i></p>
+
+      <img class="results_img_left_50" src="./img/z_tiff_60_20.png" alt="z_tiff_60_20">
+      <img class="results_img_left_50" src="./img/z_tiff_60_50.png" alt="z_tiff_60_50">
+      <img class="results_img_left_50" src="./img/z_tiff_60_100.png" alt="z_tiff_60_100">
+      <img class="results_img_left_50" src="./img/z_tiff_60_1000.png" alt="z_tiff_60_1000">
+
+      <p><i>(above) [1 2 / 3 4] all: weighting scheme - tent & .tiff / 1: l=20 / 2: l=50 / 3: l=100 / 4: l=1000</i></p>
+
+      <img class="results_img_left_50" src="./img/z_jpg_uniform_20.png" alt="z_jpg_uniform_20">
+      <img class="results_img_left_50" src="./img/z_jpg_uniform_50.png" alt="z_jpg_uniform_50">
+      <img class="results_img_left_50" src="./img/z_jpg_uniform_100.png" alt="z_jpg_uniform_100">
+      <img class="results_img_left_50" src="./img/z_jpg_uniform_1000.png" alt="z_jpg_uniform_1000">
+
+      <p><i>(above) [1 2 / 3 4] all: weighting scheme - uniform & .jpg / 1: l=20 / 2: l=50 / 3: l=100 / 4: l=1000</i></p>
+
+      <img class="results_img_left_50" src="./img/z_tiff_uniform_20.png" alt="z_tiff_uniform_20">
+      <img class="results_img_left_50" src="./img/z_tiff_uniform_50.png" alt="z_tiff_uniform_50">
+      <img class="results_img_left_50" src="./img/z_tiff_uniform_100.png" alt="z_tiff_uniform_100">
+      <img class="results_img_left_50" src="./img/z_tiff_uniform_1000.png" alt="z_tiff_uniform_1000">
+
+      <p><i>(above) [1 2 / 3 4] all: weighting scheme - uniform & .tiff / 1: l=20 / 2: l=50 / 3: l=100 / 4: l=1000</i></p>
+
+      <p>Each case takes almost 60 secs to execute completely.</p>
+
+
+      <hr/>
+
+
+      <h3>1-2. MERGE EXPOSURE STACK INTO HDR IMAGE<br/><small></small></h3>
+
+      <p>If I uses full size image, it takes too long time, so I resized it to half size. </p>
+
+      <p>First, we have to make image linear using <code>g</code> function which implemented before.</p>
+      <p>There are two method, exponential and linear one.</p>
+
+<pre class="matlab-code">
+%%%% Exponential
+img_list_r(:,:,:) = exp( g_r(img_list(:, :, 1, :) + 1)/n );
+img_list_g(:,:,:) = exp( g_g(img_list(:, :, 2, :) + 1)/n );
+img_list_b(:,:,:) = exp( g_b(img_list(:, :, 3, :) + 1)/n );
+%%%% Linear
+% img_list_r(:,:,:) = g_r(img_list(:, :, 1, :) + 1);
+% img_list_g(:,:,:) = g_g(img_list(:, :, 2, :) + 1);
+% img_list_b(:,:,:) = g_b(img_list(:, :, 3, :) + 1);
+</pre>
+
+      <p>Then, we have to map that <code>img_list_new</code> to range 0-255.</p>
+
+<pre class="matlab-code">
+img_list_max = max(max(max(max(img_list_new))));
+img_list_min = min(min(min(min(img_list_new))));
+img_list_new = img_list_new * 0.998 / (img_list_max-img_list_min) + (0.001*img_list_max - 0.999*img_list_min) / (img_list_max-img_list_min);
+img_list_new = floor(img_list_new * 256);
+</pre>
+
+      <p>Then I made <code>B_img</code>, which is based on <code>B</code>.</p>
+
+<pre class="matlab-code">
+B_img = zeros(height, width, ch, k);
+for i = 1: height
+    for j = 1: width
+        for c = 1: ch
+            B_img(i, j, c, :) = B(:, 1);
+        end
+    end
+end
+</pre>
+
+      <p>And last, we apply <code>B_img</code> on <code>img_list_new</code>, to make it linear.</p>
+      <p>It's based on given equation.</p>
+
+<pre class="matlab-code">
+img_hdr_u = sum( w(img_list_new+1) .* img_list_new ./ B_img, 4);
+img_hdr_d = sum( w(img_list_new+1), 4);
+img_hdr = img_hdr_u ./ img_hdr_d;
+</pre>
+
+      <p>For last, we have to mapping it to 0-1 range to visualize it.</p>
+
+      <p>We can check all results of each cases.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_jpg_uniform_exp_20.png" alt="hdr_jpg_uniform_exp_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_jpg_uniform_exp_1000.png" alt="hdr_jpg_uniform_exp_1000">
+
+      <p><i>(above) [1 2] all: .jpg & uniform & exponential / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_tiff_uniform_exp_20.png" alt="hdr_tiff_uniform_exp_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_tiff_uniform_exp_1000.png" alt="hdr_tiff_uniform_exp_1000">
+
+      <p><i>(above) [1 2] all: .tiff & uniform & exponential / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_jpg_tent_exp_20.png" alt="hdr_jpg_tent_exp_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_jpg_tent_exp_1000.png" alt="hdr_jpg_tent_exp_1000">
+
+      <p><i>(above) [1 2] all: .jpg & tent & exponential / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_tiff_tent_exp_20.png" alt="hdr_tiff_tent_exp_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_tiff_tent_exp_1000.png" alt="hdr_tiff_tent_exp_1000">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_jpg_uniform_linear_20.png" alt="hdr_jpg_uniform_linear_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_jpg_uniform_linear_1000.png" alt="hdr_jpg_uniform_linear_1000">
+
+      <p><i>(above) [1 2] all: .jpg & uniform & linear / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_tiff_uniform_linear_20.png" alt="hdr_tiff_uniform_linear_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_tiff_uniform_linear_1000.png" alt="hdr_tiff_uniform_linear_1000">
+
+      <p><i>(above) [1 2] all: .tiff & uniform & linear / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_jpg_tent_linear_20.png" alt="hdr_jpg_tent_linear_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_jpg_tent_linear_1000.png" alt="hdr_jpg_tent_linear_1000">
+
+      <p><i>(above) [1 2] all: .jpg & tent & linear / 1: l=20 / 2: l=1000</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/hdr_tiff_tent_linear_20.png" alt="hdr_tiff_tent_linear_20">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/hdr_tiff_tent_linear_1000.png" alt="hdr_tiff_tent_linear_1000">
+
+      <p><i>(above) [1 2] all: .tiff & tent & linear / 1: l=20 / 2: l=1000</i></p>
+
+
+      <p>Each case takes almost 120 secs to execute completely.</p>
+
+
+      <hr/>
+
+
+      <h3>2. TONEMAPPING<br/><small></small></h3>
+      <h3>2-1. PHOTOGRAPHIC TONEMAPPING<br/><small></small></h3>
+
+      <p>I implemented <code>photo_tonemap</code> function to apply tonemapping in HDR image.</p>
+
+<pre class="matlab-code">
+function I_HDR_tm = photo_tonemap(K, B, I_HDR)
+
+[height, width, ch] = size(I_HDR);
+
+I_HDR_norm = zeros(height, width, ch);
+for i = 1: ch
+    I_HDR_norm(:,:,i) = I_HDR(:,:,i) * K / exp(mean(mean(log(I_HDR(:,:,i) + 1e-10))));
+end
+
+I_white = B * max(max(I_HDR_norm));
+
+I_HDR_tm = I_HDR_norm .* (1 + I_HDR_norm ./ (I_white.*I_white) ./ (1+I_HDR_norm));
+
+end
+</pre>
+
+      <p>I tested it with several different <code>K</code> and <code>B</code> values.</p>
+      <p>And my base environments are <code>.tiff</code>, <code>weighting scheme - tent</code>, <code>exponential</code>, and <code>l=1000</code>.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_05_09.png" alt="tm_05_09">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_01_09.png" alt="tm_01_09">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.5, B=0.9 / 2: K=0.1, B=0.9</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_05_05.png" alt="tm_05_05">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_01_05.png" alt="tm_01_05">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.5, B=0.5 / 2: K=0.1, B=0.5</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_09_09.png" alt="tm_09_09">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_01_095.png" alt="tm_01_095">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.9, B=0.9 / 2: K=0.1, B=0.95</i></p>
+
+      <br/>
+      <p>And this is for <code>.jpg</code>, <code>weighting scheme - uniform</code>, <code>exponential</code>, and <code>l=1000</code>.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_2_01_09.png" alt="tm_2_01_09">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_2_05_09.png" alt="tm_2_05_09">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.1, B=0.9 / 2: K=0.5, B=0.9</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_2_05_05.png" alt="tm_2_05_05">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_2_01_05.png" alt="tm_2_01_05">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.5, B=0.5 / 2: K=0.1, B=0.5</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/tm_2_02_09.png" alt="tm_2_02_09">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/tm_2_015_085.png" alt="tm_2_015_085">
+
+      <p><i>(above) [1 2] all: .tiff & tent & exponential & l=1000 / 1: K=0.2, B=0.9 / 2: K=0.15, B=0.85</i></p>
+
+      <br/>
+      <p style="color: red;"><b>I couldn't complete this project. :/</b></p>
+
+
+      <hr/>
+      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A4/web">GitHub Repo</a>.</i></p>
+
+      <hr class="copyright-hr"/>
+
+      <div class="copyright">
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A4/web">GitHub Repo</a></p>
+        <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
+      </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.min.js"></script>
+  </body>
+</html>
