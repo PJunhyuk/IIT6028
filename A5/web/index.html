@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HA#5_IIT6028</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.css">
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <script>
+    </script>
+
+    <style>
+    @import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    .container {
+      padding-bottom: 20px;
+    }
+
+    .title {
+      margin-top: 30px;
+    }
+    .student-info {
+      float: right;
+      text-align: right;
+    }
+
+    hr {
+      width: 100%;
+    }
+
+    #main-carousel {
+      width: 1000px;
+      left: 50%;
+      margin-left: -500px;
+      margin-top: 30px;
+    }
+
+    h3 {
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+
+    img {
+      margin-bottom: 5px;
+    }
+    img.results_img {
+      width: 100%;
+    }
+    img.results_img_left_15 {
+      width: 15%;
+    }
+    img.results_img_right_15 {
+      width: 15%;
+      margin-left: 5%;
+    }
+
+    img.results_img_left {
+      width: 50%;
+    }
+    img.results_img_right {
+      width: 50%;
+      float: right;
+    }
+
+    .copyright-hr {
+      margin-top: 100px;
+    }
+    .copyright {
+      float: right;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .embed-responsive video {
+      width: 50%;
+    }
+
+    </style>
+  </head>
+  <body onload="highlightMATLABCode({tagCode: false, tagPre: true, className: 'matlab-code'});">
+
+    <div class="container">
+
+      <div class="title">
+        <h1>IIT6028 HA#5&nbsp;<small>Computational Photography</small></h1>
+      </div>
+
+      <div class="student-info">
+        <p>2018314405 Park Jun Hyuk</p>
+        <p><a href="http://mcml.yonsei.ac.kr/">MCML Group</a> @ <a href="http://www.yonsei.ac.kr/sc/index.jsp">Yonsei Univ.</a></p>
+        <p><a href="https://github.com/PJunhyuk">GitHub</a> / <a href="http://parkjunhyuk.com">Website</a></p>
+      </div>
+
+
+      <hr/>
+
+
+      <h1>LIGHT FIELD RENDERING, FOCAL STACKS AND DEPTH FROM DEFOCUS</h1>
+
+      <hr/>
+      <h3>1. Initials<br/><small>Load the light field image, and create from it a 5-dimensional array L.</small></h3>
+
+      <p>First, I load the given light field image and set variables from it.</p>
+      <p>I set them for <code>global</code> variable, to use it in <code>combine_depth</code> function.</p>
+
+<pre class="matlab-code">
+img_raw = imread('data/chessboard_lightfield.png');
+
+global u v s t c
+u = 16;
+v = 16;
+s = size(img_raw, 1) / u;
+t = size(img_raw, 2) / v;
+c = 3;
+</pre>
+
+      <p>Then I made <code>img_array</code>, which means <code>L</code> in given guide.</p>
+
+<pre class="matlab-code">
+img_array = zeros(u, v, s, t, c);
+img_array = uint8(img_array);
+for i = 1:s
+    for j = 1:t
+        for x = 1:u
+            for y = 1:v
+                for z = 1:c
+                    img_array(x, y, i, j, z) = img_raw(u*(i-1)+x, v*(j-1)+y, z);
+                end
+            end
+        end
+    end
+end
+</pre>
+
+      <p>It tooks 20 sec in my desktop. I think it takes quite long time because of <code>global</code>.</p>
+
+
+      <hr/>
+
+
+      <h3>2. Sub-aperture views<br/><small>Rearranging the pixels in the light field image.</small></h3>
+
+      <p>I created <code>img_mosaic</code>, it is 2D mosaic which was created from sub-aperture views.</p>
+
+<pre class="matlab-code">
+img_mosaic = zeros(u*s, v*t, c);
+img_mosaic = uint8(img_mosaic);
+for x = 1:u
+    for y = 1:v
+        img_mosaic(s*(x-1)+1: s*(x-1)+s, t*(y-1)+1: t*(y-1)+t, :) = img_array(x, y, :, :, :);
+    end
+end
+
+imwrite(img_mosaic, 'results/img_mosaic.png');
+</pre>
+
+      <p>Following image is the results of this parts.</p>
+      <p>It's size is too big(6400x11200x3), so I reduced it to show on website more well.</p>
+
+      <img class="results_img" src="./img/img_mosaic.png" alt="img_mosaic">
+      <p><i>(above) img_mosaic</i></p>
+
+
+      <hr/>
+
+
+      <h3>3. Refocusing and focal-stack generation<br/><small>A different effect achieved by appropriately combining parts of the light field is refocusing at different depths.</small></h3>
+
+      <p>I created <code>combine_depth</code> function to get <code>img_combined</code> by given depth.</p>
+
+<pre class="matlab-code">
+function [img_combined] = combine_depth(img_array, d_)
+
+    global u v s t c
+
+    img_array = double(img_array);
+
+    img_combined = zeros(s, t, c);
+
+    for i = 1:s
+        for j = 1:t
+            count = 0;
+            for x = 1-u/2:u/2
+                i_ = i + round(x*d_);
+                for y = 1-v/2:v/2
+                    j_ = j - round(y*d_);
+                    if i_ <= s && i_ >= 1 && j_ <= t && j_ >= 1
+                        for z =1:c
+                            img_combined(i, j, z) = img_combined(i, j, z) + img_array(x+u/2, y+v/2, i_, j_, z);
+                        end
+                        count = count + 1;
+                    end
+                end
+            end
+            img_combined(i, j, :) = img_combined(i, j, :) / count;
+        end
+    end
+
+    img_combined = uint8(img_combined);
+
+end
+</pre>
+
+      <p>To calculate average of <code>img_array</code>, I set <code>count</code> to divide sum of them.</p>
+      <p>I added <code>round(x*d_)</code> value on i, but subtracted it on j.</p>
+
+      <br/>
+
+      <p>And first, I set x and y value to <code>1:u/v</code>.</p>
+      <p>Then we can check refocusing is applied correctly, but there are some moving of whole image.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/combined_0_ed.png" alt="combined_0_ed">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/combined_2_ed.png" alt="combined_2_ed">
+      <p><i>(above) [1 2] 1: depth=0 / 2: depth=2</i></p>
+
+      <p>We can fix it by setting x and y value to <code>1-u/2:u/2</code>.</p>
+      <p>Following images are fixed results of refocusing.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/combined_0.png" alt="combined_0">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/combined_0.4.png" alt="combined_0.4">
+      <p><i>(above) [1 2] 1: depth=0 / 2: depth=0.4</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/combined_0.8.png" alt="combined_0.8">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/combined_1.2.png" alt="combined_1.2">
+      <p><i>(above) [1 2] 1: depth=0.8 / 2: depth=1.2</i></p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/combined_1.6.png" alt="combined_1.6">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/combined_2.png" alt="combined_2">
+      <p><i>(above) [1 2] 1: depth=1.6 / 2: depth=2</i></p>
+
+      <p>We can check refocusing is successfully applied.</p>
+
+
+      <hr/>
+
+
+      <h3>4. All-focus image and depth from defocus<br/><small>Merge the images into a new images where all of the scene is in focus.</small></h3>
+
+      <p>I calculated <code>focal_stack</code> for each luminance, low, high, and sharpness.</p>
+      <p>I used <code>rgb2xyz</code> and <code>imguassfilt</code> to implement given tasks.</p>
+      <p>In xyz color space, Y value means luminance, so I took second channel of array.</p>
+
+<pre class="matlab-code">
+focal_stack = double(focal_stack);
+
+focal_stack_lum = zeros(s, t, d);
+focal_stack_low = zeros(s, t, d);
+focal_stack_high = zeros(s, t, d);
+focal_stack_sharp = zeros(s, t, d);
+
+stdev_1 = 5;
+stdev_2 = 5;
+
+for d_ = 1:d
+    img_combined = focal_stack(:, :, :, d_);
+
+    % luminance
+    img_combined_xyz = rgb2xyz(img_combined, 'ColorSpace', 'srgb');
+    img_combined_lum = img_combined_xyz(:, :, 2);
+    focal_stack_lum(:,:,d_) = img_combined_lum;
+
+    % low
+    img_combined_low = imgaussfilt(img_combined_lum, stdev_1);
+    focal_stack_low(:,:,d_) = img_combined_low;
+
+    % high
+    img_combined_high = img_combined_lum - img_combined_low;
+    focal_stack_high(:,:,d_) = img_combined_high;
+
+    % sharpness
+    img_combined_sharp = imgaussfilt(img_combined_high .^ 2, stdev_2);
+    focal_stack_sharp(:,:,d_) = img_combined_sharp;
+end
+</pre>
+
+      <p>Then calculate <code>img_all_focus</code> and <code>img_depth_map</code> using following codes.</p>
+
+<pre class="matlab-code">
+img_all_focus = zeros(s, t, c);
+img_depth_map = zeros(s, t);
+
+for i = 1:s
+    for j = 1:t
+        fprintf('%d %d', i, j);
+
+        sum_sharp = 0;
+        for d_ = 1:d
+            img_combined = focal_stack(:, :, :, d_);
+            img_combined_sharp = focal_stack_sharp(:,:,d_);
+
+            img_all_focus(i, j, :) = img_all_focus(i, j, :) + img_combined(i, j, :) * img_combined_sharp(i, j);
+            img_depth_map(i, j) = img_depth_map(i, j) + img_combined_sharp(i, j) * 0.1*(d_-1);
+
+            sum_sharp = sum_sharp + img_combined_sharp(i, j);
+        end
+        img_all_focus(i, j, :) = img_all_focus(i, j, :) / sum_sharp;
+        img_depth_map(i, j) = img_depth_map(i, j) / sum_sharp;
+    end
+end
+</pre>
+
+      <p>And following images are the results of this parts.</p>
+      <p>I set list of depth as <code>0:0.1:2</code>.</p>
+
+      <img class="results_img_left_50" style="width: 45%;" src="./img/img_all_focus.png" alt="img_all_focus">
+      <img class="results_img_left_50" style="width: 45%; float: right" src="./img/img_depth_map.png" alt="img_depth_map">
+      <p><i>(above) [1 2] 1: img_all_focus / 2: img_depth_map</i></p>
+
+
+
+      <hr/>
+      <p><br/><i>You can check full matlab codes in <a href="https://github.com/PJunhyuk/IIT6028/tree/master/A4/web">GitHub Repo</a>.</i></p>
+
+      <hr class="copyright-hr"/>
+
+      <div class="copyright">
+        <p><a href="https://github.com/PJunhyuk/IIT6028/tree/master/A4/web">GitHub Repo</a></p>
+        <p>Copyright 2018. PJunhyuk. All rights reserved.</p>
+      </div>
+
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="http://matlabtricks.com/highlighter/matlab-highlighter-1.55.min.js"></script>
+  </body>
+</html>
