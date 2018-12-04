@@ -41,7 +41,7 @@ fprintf('Initials end\n'); toc
 % end
 % 
 % imwrite(img_mosaic, 'results/img_mosaic.png');
-fprintf('Sub-aperture views end\n'); toc
+% fprintf('Sub-aperture views end\n'); toc
 
 %% Refocusing and focal-stack generation
 
@@ -51,7 +51,7 @@ focal_stack = zeros(s, t, c, d);
 focal_stack = uint8(focal_stack);
 
 for d_ = 1:d
-    fprintf('%d/ ', d_);
+%     fprintf('%d/ ', d_);
     focal_stack(:, :, :, d_) = combine_depth(img_array, 0.1*(d_-1));
 end
 
@@ -62,7 +62,7 @@ img_combined = uint8(img_combined);
 
 for d_ = 1:d
     img_combined = focal_stack(:, :, :, d_);
-    imwrite(img_combined, strcat('results/combined_', num2str((d_-1)*0.1, 1), '.png'));
+    imwrite(img_combined, strcat('results/combined_', num2str((d_-1)*0.1, 2), '.png'));
 end
 
 fprintf('Refocusing and focal-stack generation - save end\n'); toc
@@ -100,13 +100,13 @@ for d_ = 1:d
     focal_stack_sharp(:,:,d_) = img_combined_sharp;
 end
 
+fprintf('All-focus image and depth from defocus - setting end\n'); toc
+
 img_all_focus = zeros(s, t, c);
 img_depth_map = zeros(s, t);
 
 for i = 1:s
     for j = 1:t
-        fprintf('%d %d', i, j);
-
         sum_sharp = 0;
         for d_ = 1:d
             img_combined = focal_stack(:, :, :, d_);
@@ -127,6 +127,8 @@ img_depth_map = uint8(img_depth_map);
 
 imwrite(img_all_focus, 'results/img_all_focus.png');
 imwrite(img_depth_map, 'results/img_depth_map.png');
+
+fprintf('All-focus image and depth from defocus end\n'); toc
 
 
 %% functions
