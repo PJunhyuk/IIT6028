@@ -14,6 +14,9 @@ s = size(img_raw, 1) / u;
 t = size(img_raw, 2) / v;
 c = 3;
 
+% load('results/focal_stack.mat');
+% fprintf('load complete\n'); toc
+
 img_array = zeros(u, v, s, t, c);
 img_array = uint8(img_array);
 for i = 1:s
@@ -32,16 +35,16 @@ fprintf('Initials end\n'); toc
 
 %% Sub-aperture views
 
-% img_mosaic = zeros(u*s, v*t, c);
-% img_mosaic = uint8(img_mosaic);
-% for x = 1:u
-%     for y = 1:v
-%         img_mosaic(s*(x-1)+1: s*(x-1)+s, t*(y-1)+1: t*(y-1)+t, :) = img_array(x, y, :, :, :);
-%     end
-% end
-% 
-% imwrite(img_mosaic, 'results/img_mosaic.png');
-% fprintf('Sub-aperture views end\n'); toc
+img_mosaic = zeros(u*s, v*t, c);
+img_mosaic = uint8(img_mosaic);
+for x = 1:u
+    for y = 1:v
+        img_mosaic(s*(x-1)+1: s*(x-1)+s, t*(y-1)+1: t*(y-1)+t, :) = img_array(x, y, :, :, :);
+    end
+end
+
+imwrite(img_mosaic, 'results/img_mosaic.png');
+fprintf('Sub-aperture views end\n'); toc
 
 %% Refocusing and focal-stack generation
 
@@ -106,16 +109,20 @@ img_all_focus = zeros(s, t, c);
 img_depth_map = zeros(s, t);
 
 for i = 1:s
+    fprintf("%d ", i); toc
     for j = 1:t
         sum_sharp = 0;
-        for d_ = 1:d
+        for d_ = 1:7:d
             img_combined = focal_stack(:, :, :, d_);
-            img_combined_sharp = focal_stack_sharp(:,:,d_);
+            sharp_value = focal_stack_sharp(i,j,d_);
 
-            img_all_focus(i, j, :) = img_all_focus(i, j, :) + img_combined(i, j, :) * img_combined_sharp(i, j);
-            img_depth_map(i, j) = img_depth_map(i, j) + img_combined_sharp(i, j) * 0.1*(d_-1);
+%             img_all_focus(i, j, :) = img_all_focus(i, j, :) + img_combined(i, j, :) * sharp_value;
+            for z = 1:c
+                img_all_focus(i, j, z) = img_all_focus(i, j, z) + img_combined(i, j, z) * sharp_value;
+            end
+            img_depth_map(i, j) = img_depth_map(i, j) + sharp_value * 0.1*(d_-1);
 
-            sum_sharp = sum_sharp + img_combined_sharp(i, j);
+            sum_sharp = sum_sharp + sharp_value;
         end
         img_all_focus(i, j, :) = img_all_focus(i, j, :) / sum_sharp;
         img_depth_map(i, j) = img_depth_map(i, j) / sum_sharp;
@@ -123,7 +130,7 @@ for i = 1:s
 end
 
 img_all_focus = uint8(img_all_focus);
-img_depth_map = uint8(img_depth_map);
+img_depth_map = (1 - img_depth_map / 2);
 
 imwrite(img_all_focus, 'results/img_all_focus.png');
 imwrite(img_depth_map, 'results/img_depth_map.png');
